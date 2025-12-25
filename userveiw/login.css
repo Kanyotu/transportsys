@@ -1,0 +1,133 @@
+* {
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f5132, #1b1b1b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 15px; /* prevents edge overflow on small screens */
+}
+
+.login-container {
+  background: #ffffff;
+  width: 100%;
+  max-width: 580px;
+  padding: 28px;
+  border-radius: 14px;
+  box-shadow: 0 15px 30px rgba(0,0,0,0.25);
+}
+
+/* BRAND */
+.brand {
+  text-align: center;
+  margin-bottom: 22px;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 26px;
+  color: #0f5132;
+}
+
+.brand span {
+  color: #198754;
+}
+
+.brand p {
+  font-size: 13px;
+  color: #555;
+}
+
+/* INPUTS */
+.input-group {
+  margin-bottom: 16px;
+}
+
+.input-group label {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: #333;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 11px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: #198754;
+}
+
+/* BUTTON */
+button {
+  width: 100%;
+  padding: 13px;
+  background: #198754;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+button:hover {
+  background: #157347;
+}
+
+/* REGISTER LINK */
+.register {
+  text-align: center;
+  font-size: 13px;
+  margin-top: 15px;
+}
+
+.register a {
+  color: #198754;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+/* SMALL DEVICES (PHONES)*/
+@media (max-width: 480px) {
+
+  .login-container {
+    padding: 22px;
+    border-radius: 12px;
+  }
+
+  .brand h1 {
+    font-size: 22px;
+  }
+
+  .brand p {
+    font-size: 12px;
+  }
+
+  .input-group input {
+    font-size: 14px;
+    padding: 10px;
+  }
+
+  button {
+    font-size: 15px;
+    padding: 12px;
+  }
+}
+
+/* LARGE SCREENS */
+@media (min-width: 900px) {
+  .login-container {
+    padding: 32px;
+  }
+}
