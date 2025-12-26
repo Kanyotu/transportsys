@@ -1,12 +1,20 @@
 <?php
-include 'database.php';
 session_start();
+if(isset($_SESSION['user_id'])) {
+    header("Location: dashboard.php");
+    exit();
+}
+include 'database.php';
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $phone = htmlspecialchars(trim($_POST['phone']));
+    $phone = preg_replace('/\D/', '', $_POST['phone']);
+    $phone = trim($phone);
     $password = $_POST['password']; 
 
     $sql = "SELECT * FROM users WHERE phoneno = ?";
     $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        die("Database error.");
+    }
     $stmt->bind_param("s", $phone);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -14,16 +22,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($result->num_rows === 1) {
         $user = $result->fetch_assoc();
         if (password_verify($password, $user['hashedpassword'])) {
-            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['user_id'] = $user['userid'];
             $_SESSION['username'] = $user['username'];
             $conn->close();
-            header("Location: dashboard.php");
-            exit();
+            echo "<script>alert('Login successful! Welcome, " . htmlspecialchars($_SESSION['username']) . "'); window.location.href = 'dashboard.php';</script>";
+            // header("Location: dashboard.php");
+            // exit();
         } else {
             echo "<script>alert('Incorrect password.');</script>";
         }
     } else {
-        echo "<script>alert('No user found with that phone number.');</script>";
+        echo "<script>alert('No user found with that phone number..$phone ');</script>";
     }
     
 }
@@ -38,22 +47,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   <link rel="stylesheet" href="login.css">
 </head>
 <body>
-
   <div class="login-container">
     <div class="brand">
       <h1>Safiri<span>Pay</span></h1>
       <p>Smart Public Transport Payments</p>
     </div>
 
-    <form id="loginForm">
+    <form id="loginForm" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF'])?>" method="POST">
       <div class="input-group">
         <label>Phone Number</label>
-        <input type="tel" id="phone" placeholder="07XXXXXXXX" required>
+        <input name="phone" type="text" id="phone" placeholder="07XXXXXXXX" required>
       </div>
 
       <div class="input-group">
         <label>Password</label>
-        <input type="password" id="password" placeholder="••••••••" required>
+        <input name="password" type="password" id="password" placeholder="••••••••" required>
       </div>
 
       <button type="submit">Login</button>
@@ -63,7 +71,5 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       </p>
     </form>
   </div>
-
-  <script src="login.js"></script>
 </body>
 </html>

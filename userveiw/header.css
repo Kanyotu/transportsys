@@ -1,0 +1,71 @@
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  height: 60px;
+  background: #0f5132;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+}
+
+.logo {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.logo span {
+  color: #20c997;
+}
+
+.nav-links {
+  display: flex;
+  gap: 18px;
+}
+
+.nav-links a {
+  color: white;
+  text-decoration: none;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.nav-links a:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.user-name {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.logout {
+  background: #dc3545;
+  padding: 7px 12px;
+  border-radius: 6px;
+  color: white;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.logout:hover {
+  background: #bb2d3b;
+}
+@media (max-width: 768px) {
+  .nav-links {
+    display: none;
+  }
+
+  .logo {
+    font-size: 18px;
+  }
+}
