@@ -21,7 +21,7 @@ include 'landingheader.php';
       Scan a QR code, choose your destination, pay via MPesa,
       and get your seat instantly.
     </p>
-    <a href="register.html" class="hero-btn">Start Using SafiriPay</a>
+    <a href="register.php" class="hero-btn">Start Using SafiriPay</a>
   </section>
 
   <!-- FEATURES -->

@@ -8,6 +8,7 @@ session_start();
   <title>SafiriPay</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="header.css">
+  <link rel="icon" href="car.jpeg" type="image/jpeg">
 </head>
 
 <body>
@@ -18,8 +19,9 @@ session_start();
 
   <nav class="nav-links">
     <a href="dashboard.php">Dashboard</a>
-    <a href="transactions.php">Trips</a>
-    <a href="analytics.php">Spending</a>
+    <a href="trips.php">Trips</a>
+
+    
     <a href="profile.php">Profile</a>
   </nav>
 

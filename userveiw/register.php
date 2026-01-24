@@ -1,6 +1,11 @@
 <?php
 include 'database.php';
 
+if(isset($_SESSION['user_id'])) {
+    header("Location: dashboard.php");
+    exit();
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Full name
     $fullname = filter_input(INPUT_POST, 'fullname', FILTER_SANITIZE_SPECIAL_CHARS);

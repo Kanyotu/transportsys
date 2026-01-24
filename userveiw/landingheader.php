@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <link rel="stylesheet" href="landing.css">
+    <link rel="icon" href="car.jpeg" type="image/jpeg">
 </head>
 <body>
   <header class="navbar">
