@@ -2,7 +2,11 @@
   box-sizing: border-box;
   font-family: 'Segoe UI', Tahoma, sans-serif;
 }
-
+body {
+  margin: 0;
+  background: #020617;
+  color: #e5e7eb;
+}
 .app-header {
   position: sticky;
   top: 0;
@@ -96,6 +100,11 @@
   font-weight: bold;
   color: #198754;
 }
+.stat-card:hover {
+  box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+  transform: scale(1.05);
+  transition: all 0.3s ease;
+}
 
 /* ACTIONS */
 .actions {
@@ -103,6 +112,7 @@
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 20px;
 }
+
 
 .action-btn {
   background: #198754;

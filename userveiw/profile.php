@@ -1,5 +1,5 @@
 <?php
-
+session_start();
 include 'header.php';
 include 'checkinguserindb.php';
 
@@ -61,7 +61,7 @@ $stmt->close();
         <span>👤</span>
       </div>
 
-      <h2><?php echo $_SESSION['username']?></h2>
+      <h2><?php echo ucfirst($_SESSION['username'])?></h2>
       <p class="phone">📞 <?php echo htmlspecialchars($user['phoneno'])?></p>
 
       <div class="status verified">
@@ -112,6 +112,7 @@ $stmt->close();
         ";
       }
       ?>
+      <button onclick="location.href='editprofile.php'" class="edit-btn">✏️ Edit Profile</button>
 
       <!-- <a href="#" class="edit-btn">Edit Profile</a> -->
     </section>

@@ -1,5 +1,5 @@
 <?php
-session_start();
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -20,6 +20,9 @@ session_start();
   <nav class="nav-links">
     <a href="dashboard.php">Dashboard</a>
     <a href="trips.php">Trips</a>
+    <a href="book.php">book now</a>
+    <a href="budget_setting.php">budget setting</a>
+    <a href="spending.php">spending</a>
 
     
     <a href="profile.php">Profile</a>
@@ -27,7 +30,7 @@ session_start();
 
   <div class="user-actions">
     <span class="user-name">
-      <?php echo $_SESSION['username'] ?? 'User'; ?>
+      <?php echo ucfirst($_SESSION['username']) ?>
     </span>
     <a href="logout.php" class="logout">Logout</a>
   </div>

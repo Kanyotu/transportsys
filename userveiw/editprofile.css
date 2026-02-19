@@ -1,0 +1,97 @@
+* {
+  box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(135deg, #0f172a, #020617);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #e5e7eb;
+}
+
+/* CONTAINER */
+.edit-container {
+  background: #020617;
+  border-radius: 14px;
+  padding: 30px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+
+.edit-container h2 {
+  text-align: center;
+  margin-bottom: 25px;
+  color: #22c55e;
+}
+
+/* INPUTS */
+.input-group {
+  margin-bottom: 18px;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #1f2933;
+  background: #020617;
+  color: #e5e7eb;
+  font-size: 15px;
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: #22c55e;
+}
+
+/* BUTTON */
+.save-btn {
+  width: 100%;
+  padding: 13px;
+  background: #22c55e;
+  color: #022c22;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.save-btn:hover {
+  background: #16a34a;
+}
+
+/* CANCEL */
+.cancel-link {
+  display: block;
+  text-align: center;
+  margin-top: 15px;
+  color: #9ca3af;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.cancel-link:hover {
+  color: #e5e7eb;
+}
+
+/* RESPONSIVE */
+@media (max-width: 480px) {
+  .edit-container {
+    margin: 15px;
+    padding: 22px;
+  }
+}
