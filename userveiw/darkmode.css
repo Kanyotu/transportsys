@@ -1,0 +1,413 @@
+/* ================================
+   DARK MODE STYLES - SafiriPay
+   ================================ */
+
+/* Light Mode (Default) Variables */
+:root {
+  --bg-primary: #f8f9fa;
+  --bg-secondary: #ffffff;
+  --bg-gradient-start: #0f5132;
+  --bg-gradient-end: #1b1b1b;
+  --text-primary: #212529;
+  --text-secondary: #6c757d;
+  --text-light: #666;
+  --border-color: #ccc;
+  --border-light: #eee;
+  --card-bg: #ffffff;
+  --card-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+  --input-bg: #ffffff;
+  --input-border: #ccc;
+  --primary-color: #0f5132;
+  --primary-dark: #0c4128;
+  --secondary-color: #20c997;
+  --accent-color: #198754;
+  --danger-color: #dc3545;
+  --success-color: #28a745;
+  --warning-color: #ffc107;
+  --hover-overlay: rgba(0, 0, 0, 0.05);
+  --navbar-bg: #0f5132;
+  --footer-bg: #0f5132;
+  --stat-card-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+}
+
+/* Dark Mode Variables */
+[data-theme="dark"] {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-gradient-start: #0f5132;
+  --bg-gradient-end: #020617;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-light: #cbd5e1;
+  --border-color: #334155;
+  --border-light: #1e293b;
+  --card-bg: #1e293b;
+  --card-shadow: 0 8px 18px rgba(0, 0, 0, 0.4);
+  --input-bg: #0f172a;
+  --input-border: #334155;
+  --primary-color: #10b981;
+  --primary-dark: #059669;
+  --secondary-color: #22c55e;
+  --accent-color: #10b981;
+  --danger-color: #ef4444;
+  --success-color: #22c55e;
+  --warning-color: #f59e0b;
+  --hover-overlay: rgba(255, 255, 255, 0.05);
+  --navbar-bg: #1e293b;
+  --footer-bg: #0f172a;
+  --stat-card-shadow: 0 8px 18px rgba(0, 0, 0, 0.6);
+}
+
+/* Apply theme transitions */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Dark Mode Toggle Button */
+.dark-mode-toggle {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  z-index: 9999;
+  transition: all 0.3s ease;
+}
+
+.dark-mode-toggle:hover {
+  transform: scale(1.1) rotate(15deg);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.dark-mode-toggle:active {
+  transform: scale(0.95);
+}
+
+/* Icon animations */
+.dark-mode-toggle .sun-icon,
+.dark-mode-toggle .moon-icon {
+  position: absolute;
+  transition: all 0.3s ease;
+}
+
+[data-theme="light"] .moon-icon {
+  opacity: 0;
+  transform: rotate(180deg) scale(0);
+}
+
+[data-theme="light"] .sun-icon {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+[data-theme="dark"] .sun-icon {
+  opacity: 0;
+  transform: rotate(-180deg) scale(0);
+}
+
+[data-theme="dark"] .moon-icon {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+/* Mobile responsive toggle */
+@media (max-width: 768px) {
+  .dark-mode-toggle {
+    width: 50px;
+    height: 50px;
+    bottom: 20px;
+    right: 20px;
+    font-size: 20px;
+  }
+}
+
+/* Global body styles */
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Card styles */
+.card,
+.feature,
+.stat-card,
+.action-card,
+.profile-card,
+.details-card,
+.safety-card,
+.welcome-card,
+.edit-container,
+.login-container,
+.chart-card,
+.budget-card-light {
+  background: var(--card-bg);
+  color: var(--text-primary);
+  box-shadow: var(--card-shadow);
+}
+
+/* Input styles */
+input,
+select,
+textarea {
+  background: var(--input-bg);
+  color: var(--text-primary);
+  border-color: var(--input-border);
+}
+
+input::placeholder,
+select::placeholder,
+textarea::placeholder {
+  color: var(--text-secondary);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--secondary-color);
+}
+
+/* Table styles */
+table {
+  background: var(--card-bg);
+}
+
+th {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-light);
+}
+
+td {
+  color: var(--text-primary);
+  border-color: var(--border-light);
+}
+
+tr:hover {
+  background: var(--hover-overlay);
+}
+
+/* Header/Navbar styles */
+.navbar,
+.app-header,
+.topbar {
+  background: var(--navbar-bg);
+}
+
+/* Footer styles */
+footer {
+  background: var(--footer-bg);
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-primary);
+}
+
+/* Links */
+a {
+  color: var(--secondary-color);
+}
+
+a:hover {
+  color: var(--primary-color);
+}
+
+/* Specific component overrides */
+.detail {
+  border-color: var(--border-light);
+}
+
+.detail span {
+  color: var(--text-secondary);
+}
+
+.trips-table th,
+.trips-table td {
+  border-color: var(--border-light);
+}
+
+/* Status badges adjustments */
+.status {
+  opacity: 0.9;
+}
+
+/* Progress bars */
+.progress-bar {
+  background: var(--bg-secondary);
+}
+
+/* Empty state */
+.empty-state {
+  color: var(--text-secondary);
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Dark mode specific gradient backgrounds */
+[data-theme="dark"] .hero,
+[data-theme="dark"] .welcome-section {
+  background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+}
+
+[data-theme="dark"] body {
+  background: var(--bg-primary);
+}
+
+/* Improve readability in dark mode */
+[data-theme="dark"] .brand h1,
+[data-theme="dark"] .logo {
+  color: var(--secondary-color);
+}
+
+[data-theme="dark"] .feature h3,
+[data-theme="dark"] .action-text h3 {
+  color: var(--text-primary);
+}
+
+/* Special handling for inline styles override */
+[data-theme="dark"] .login-container,
+[data-theme="dark"] .edit-container {
+  background: var(--card-bg) !important;
+}
+
+/* Chart containers */
+[data-theme="dark"] canvas {
+  filter: brightness(0.9);
+}
+
+/* Improve button visibility */
+[data-theme="dark"] button:not(.dark-mode-toggle) {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Avatar in profile */
+[data-theme="dark"] .avatar {
+  background: var(--primary-color);
+}
+
+/* Statistics and metrics */
+[data-theme="dark"] .stat-card:hover,
+[data-theme="dark"] .action-card:hover {
+  background: var(--bg-secondary);
+  transform: translateY(-5px);
+}
+
+/* Filters and selects */
+[data-theme="dark"] .filter-bar {
+  background: var(--card-bg);
+}
+
+/* Improved contrast for important elements */
+[data-theme="dark"] .logout {
+  background: var(--danger-color);
+  color: white;
+}
+
+[data-theme="dark"] .action-btn,
+[data-theme="dark"] .hero-btn,
+[data-theme="dark"] .edit-btn,
+[data-theme="dark"] .save-btn {
+  background: var(--primary-color);
+  color: white;
+}
+
+[data-theme="dark"] .action-btn:hover,
+[data-theme="dark"] .hero-btn:hover,
+[data-theme="dark"] .edit-btn:hover,
+[data-theme="dark"] .save-btn:hover {
+  background: var(--primary-dark);
+}
+
+/* Toast/Alert messages */
+[data-theme="dark"] .alert,
+[data-theme="dark"] .notification {
+  background: var(--card-bg);
+  border-left: 4px solid var(--secondary-color);
+  color: var(--text-primary);
+}
+
+/* Dropdown menus */
+[data-theme="dark"] .dropdown,
+[data-theme="dark"] .menu {
+  background: var(--card-bg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+/* Loading states */
+[data-theme="dark"] .loading,
+[data-theme="dark"] .spinner {
+  border-color: var(--border-color);
+  border-top-color: var(--secondary-color);
+}
+
+/* Scrollbar styling for dark mode */
+[data-theme="dark"] ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 5px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Firefox scrollbar */
+[data-theme="dark"] * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) var(--bg-primary);
+}
+
+/* Print styles - always light mode */
+@media print {
+  [data-theme="dark"] {
+    --bg-primary: #ffffff;
+    --bg-secondary: #ffffff;
+    --text-primary: #000000;
+    --card-bg: #ffffff;
+    --border-color: #cccccc;
+  }
+  
+  .dark-mode-toggle {
+    display: none;
+  }
+}
+
+/* Accessibility - respect user's system preference */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --text-primary: #e2e8f0;
+    --card-bg: #1e293b;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  [data-theme="dark"] {
+    --text-primary: #ffffff;
+    --bg-primary: #000000;
+    --card-bg: #1a1a1a;
+  }
+}

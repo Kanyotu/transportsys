@@ -45,7 +45,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   <title>SafiriPay | Login</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="login.css">
-  
+  <link rel="stylesheet" href="darkmode.css">
+  <link rel="icon" href="car.jpeg" type="image/jpeg">
+  <script src="darkmode.js"></script>
 </head>
 <body>
   <div class="login-container">

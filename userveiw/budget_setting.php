@@ -225,6 +225,8 @@ $conn->close();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Budget Settings | SafiriPay</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="darkmode.css">
+    <script src="darkmode.js"></script>
     <style>
         * {
             margin: 0;
@@ -823,11 +825,18 @@ $conn->close();
         /* Responsive */
         @media (max-width: 768px) {
             .budget-container {
-                padding: 0 1rem;
+                padding: 1rem;
+                margin-top: 1rem;
             }
             
             .budget-overview {
                 grid-template-columns: 1fr;
+                padding: 1.5rem;
+                gap: 1.5rem;
+            }
+
+            .current-budget {
+                font-size: 2.2rem;
             }
             
             .budget-stats {
@@ -842,18 +851,16 @@ $conn->close();
             .history-grid {
                 grid-template-columns: repeat(3, 1fr);
             }
+
+            .budget-header h1 {
+                font-size: 1.5rem;
+            }
         }
 
         @media (max-width: 480px) {
             .history-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
-            
-            .current-budget {
-                font-size: 2rem;
-            }
-            
-            .budget-overview {
                 padding: 1.5rem;
             }
         }

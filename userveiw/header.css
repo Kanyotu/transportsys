@@ -60,6 +60,7 @@
 .logout:hover {
   background: #bb2d3b;
 }
+
 @media (max-width: 768px) {
   .nav-links {
     display: none;

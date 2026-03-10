@@ -14,7 +14,7 @@ if (!$stmt) {
 $stmt->bind_param("i", $userid);
 $stmt->execute();
 $result = $stmt->get_result();
-if (!$result->num_rows === 1) {
+if ($result->num_rows !== 1) {
     $conn->close();
     header("Location: login.php");
     exit();

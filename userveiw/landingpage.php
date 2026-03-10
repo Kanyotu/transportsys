@@ -9,6 +9,8 @@ include 'landingheader.php';
   <title>SafiriPay | Smart Transport Payments</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="landing.css">
+  <link rel="stylesheet" href="darkmode.css">
+  <script src="darkmode.js"></script>
 </head>
 <body>
 

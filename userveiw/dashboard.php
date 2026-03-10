@@ -9,6 +9,7 @@ $user_id = $_SESSION['user_id'];
 $username = $_SESSION['username'];
 
 include 'database.php';
+include 'checkinguserindb.php';
 if (!$user_id) {
     header("Location: login.php");
     exit();
@@ -51,6 +52,9 @@ $sql = "
     LIMIT 5
 ";
 $stmt = $conn->prepare($sql);
+if (!$stmt) {
+    die("Query preparation failed (Recent Trips): " . $conn->error);
+}
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $recent_trips_result = $stmt->get_result();
@@ -67,6 +71,9 @@ $sql = "
     WHERE ts.userid = ? AND p.status = 'completed'
 ";
 $stmt = $conn->prepare($sql);
+if (!$stmt) {
+    die("Query preparation failed (Total Trips): " . $conn->error);
+}
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $total_trips_row = $stmt->get_result()->fetch_assoc();
@@ -80,6 +87,9 @@ $sql = "
     WHERE ts.userid = ? AND p.status = 'completed'
 ";
 $stmt = $conn->prepare($sql);
+if (!$stmt) {
+    die("Query preparation failed (Total Spent): " . $conn->error);
+}
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $total_spent_row = $stmt->get_result()->fetch_assoc();
@@ -98,6 +108,9 @@ $sql = "
     AND YEAR(p.createdat) = ?
 ";
 $stmt = $conn->prepare($sql);
+if (!$stmt) {
+    die("Query preparation failed (Monthly Spent): " . $conn->error);
+}
 $stmt->bind_param("iii", $user_id, $current_month, $current_year);
 $stmt->execute();
 $monthly_spent_row = $stmt->get_result()->fetch_assoc();
@@ -107,18 +120,21 @@ $monthly_spent = $monthly_spent_row['monthly_spent'] ?? 0;
 $budget = $user['monthlybudget'] ?? 0;
 $budget_percentage = $budget > 0 ? min(100, ($monthly_spent / $budget) * 100) : 0;
 
-// Get spending summary for chart
+// Get spending summary for chart (last 6 months)
 $sql = "
-    SELECT ss.date, ss.totalamount 
-    FROM spendingsummary ss
-    WHERE ss.userid = ?
-    ORDER BY ss.date DESC
+    SELECT 
+        MONTH(p.createdat) as month,
+        SUM(p.amount) as totalamount 
+    FROM payments p
+    JOIN tripsessions ts ON p.sessionid = ts.sessionid
+    WHERE ts.userid = ? AND p.status = 'completed'
+    GROUP BY YEAR(p.createdat), MONTH(p.createdat)
+    ORDER BY YEAR(p.createdat) DESC, MONTH(p.createdat) DESC
     LIMIT 6
 ";
 $stmt = $conn->prepare($sql);
 if (!$stmt) {
-    echo "Database error.".$conn->error;
-    exit();
+    die("Query preparation failed (Chart History): " . $conn->error);
 }
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
@@ -127,6 +143,7 @@ $spending_history = [];
 while($row = $spending_history_result->fetch_assoc()) {
     $spending_history[] = $row;
 }
+$spending_history = array_reverse($spending_history); // Show in chronological order
 
 // Close statement
 $stmt->close();
@@ -138,6 +155,8 @@ $stmt->close();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Passenger Dashboard | SafiriPay</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="darkmode.css">
+    <script src="darkmode.js"></script>
     <style>
         * {
             margin: 0;
@@ -209,6 +228,21 @@ $stmt->close();
         .scan-button:hover {
             background: #1ba87e;
             transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(32, 201, 151, 0.3);
+        }
+
+        .scan-button.short-dist {
+            background: linear-gradient(135deg, var(--secondary) 0%, #1ba87e 100%);
+        }
+
+        .scan-button.long-dist {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        }
+
+        .welcome-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
         }
 
         /* Quick Stats */
@@ -488,6 +522,12 @@ $stmt->close();
         }
 
         /* Responsive Design */
+        @media (max-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
         @media (max-width: 768px) {
             .dashboard-content {
                 padding: 1rem;
@@ -496,7 +536,21 @@ $stmt->close();
             .welcome-section {
                 flex-direction: column;
                 text-align: center;
-                gap: 1rem;
+                padding: 1.5rem;
+            }
+
+            .welcome-text h1 {
+                font-size: 1.5rem;
+            }
+
+            .welcome-actions {
+                justify-content: center;
+                width: 100%;
+            }
+
+            .scan-button {
+                width: 100%;
+                justify-content: center;
             }
             
             .stats-grid {
@@ -506,10 +560,14 @@ $stmt->close();
             .quick-actions {
                 grid-template-columns: 1fr;
             }
-            
-            .trips-table {
-                display: block;
-                overflow-x: auto;
+
+            .chart-bars {
+                gap: 15px;
+                padding: 0 10px;
+            }
+
+            .bar {
+                width: 20px;
             }
         }
     </style>
@@ -524,10 +582,16 @@ $stmt->close();
                 <h1>Welcome back, <?php echo htmlspecialchars(ucfirst($username)); ?>!</h1>
                 <p>Track your trips, manage your budget, and travel smarter.</p>
             </div>
-            <a href="scan_qr.php" class="scan-button">
-                <i class="fas fa-qrcode"></i>
-                Scan QR to Ride
-            </a>
+            <div class="welcome-actions">
+                <a href="scan_qr.php" class="scan-button short-dist">
+                    <i class="fas fa-qrcode"></i>
+                    Short Distance (Scan & Ride)
+                </a>
+                <a href="book.php" class="scan-button long-dist">
+                    <i class="fas fa-bus"></i>
+                    Long Distance (Book Trip)
+                </a>
+            </div>
         </div>
 
         <!-- Quick Stats -->
@@ -580,8 +644,18 @@ $stmt->close();
                     <i class="fas fa-qrcode"></i>
                 </div>
                 <div class="action-text">
-                    <h3>Scan & Ride</h3>
-                    <p>Scan QR code to board a bus</p>
+                    <h3>Short Distance</h3>
+                    <p>Commute locally (Scan & Ride)</p>
+                </div>
+                
+            </a>
+            <a href="book.php" class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-bus"></i>
+                </div>
+                <div class="action-text">
+                    <h3>Long Distance</h3>
+                    <p>Book inter-city trip (Seat selection)</p>
                 </div>
                 
             </a>

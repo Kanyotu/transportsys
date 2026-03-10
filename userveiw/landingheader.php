@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>SafiriPay - Smart Transport Payments</title>
     <link rel="stylesheet" href="landing.css">
+    <link rel="stylesheet" href="darkmode.css">
     <link rel="icon" href="car.jpeg" type="image/jpeg">
+    <script src="darkmode.js"></script>
 </head>
 <body>
   <header class="navbar">

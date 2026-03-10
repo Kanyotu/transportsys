@@ -58,7 +58,7 @@ if ($demo_mode) {
     $trip_id = $params['trip'] ?? null;
     
     // Validate and fetch trip details
-    $sql = "SELECT t.*, r.routename, b.platenumber, s.sacconame 
+    $sql = "SELECT t.*, b.saccoid, r.routename, b.platenumber, s.sacconame 
             FROM trips t
             JOIN routes r ON t.routeid = r.routeid
             JOIN buses b ON t.busid = b.busid
@@ -127,20 +127,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $fare = $fare_result->fetch_assoc();
                 
                 // Create trip session
-                $sql = "INSERT INTO tripsessions (userid, tripid, fromstageid, tostageid, fareamount, status, expiresat)
-                        VALUES (?, ?, ?, ?, ?, 'pending', DATE_ADD(NOW(), INTERVAL 10 MINUTE))";
+                $sql = "INSERT INTO tripsessions (userid, tripid, saccoid, busid, fromstageid, tostageid, fareamount, status, expiresat)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', DATE_ADD(NOW(), INTERVAL 10 MINUTE))";
                 $stmt = $conn->prepare($sql);
-                $stmt->bind_param("iiiid", $user_id, $trip_id, $from_stage, $to_stage, $fare['amount']);
+                $stmt->bind_param("iiiiisd", $user_id, $trip_id, $trip['saccoid'], $trip['busid'], $from_stage, $to_stage, $fare['amount']);
                 
                 if ($stmt->execute()) {
                     $session_id = $stmt->insert_id;
                     $stmt->close();
                     
-                    // Redirect to payment
-                    header("Location: initiate_payment.php?session=$session_id");
+                    // Redirect based on trip type
+                    if ($trip['trip_type'] == 'short') {
+                        // Short distance: Skip seat selection, go to payment
+                        header("Location: initiate_payment.php?session=$session_id&short=true");
+                    } else {
+                        // Long distance: Go to seat selection and options
+                        header("Location: book.php?session=$session_id");
+                    }
                     exit();
                 } else {
-                    $error = "Failed to create booking session";
+                    $error = "Failed to create booking session: " . $stmt->error;
                 }
             } else {
                 $error = "Fare not found for selected route";

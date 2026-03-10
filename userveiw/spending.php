@@ -251,6 +251,9 @@ $conn->close();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spending Analytics | SafiriPay</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="darkmode.css">
+    <link rel="icon" href="car.jpeg" type="image/jpeg">
+    <script src="darkmode.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
@@ -720,6 +723,55 @@ $conn->close();
             .budget-amount {
                 font-size: 1.8rem;
             }
+
+            /* Table to Card */
+            .table-responsive table, 
+            .table-responsive thead, 
+            .table-responsive tbody, 
+            .table-responsive th, 
+            .table-responsive td, 
+            .table-responsive tr {
+                display: block;
+            }
+
+            .table-responsive thead tr {
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+
+            .table-responsive tr {
+                border: 1px solid var(--light-gray);
+                margin-bottom: 10px;
+                background: white;
+                border-radius: 8px;
+                padding: 10px;
+            }
+
+            .table-responsive td {
+                border: none;
+                border-bottom: 1px solid #eee;
+                position: relative;
+                padding-left: 50%;
+                text-align: right;
+            }
+
+            .table-responsive td:last-child {
+                border-bottom: 0;
+            }
+
+            .table-responsive td:before {
+                content: attr(data-label);
+                position: absolute;
+                left: 10px;
+                width: 45%;
+                padding-right: 10px;
+                white-space: nowrap;
+                text-align: left;
+                font-weight: bold;
+                color: var(--gray);
+                font-size: 0.8rem;
+            }
         }
     </style>
 </head>
@@ -981,12 +1033,12 @@ $conn->close();
                                 $count++;
                             ?>
                                 <tr>
-                                    <td><?php echo date('M j, Y', strtotime($row['createdat'])); ?></td>
-                                    <td><?php echo htmlspecialchars($row['sacconame']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['routename']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['from_stage']); ?> → <?php echo htmlspecialchars($row['to_stage']); ?></td>
-                                    <td class="amount">Ksh <?php echo number_format($row['amount'], 0); ?></td>
-                                    <td>
+                                    <td data-label="Date"><?php echo date('M j, Y', strtotime($row['createdat'])); ?></td>
+                                    <td data-label="SACCO"><?php echo htmlspecialchars($row['sacconame']); ?></td>
+                                    <td data-label="Route"><?php echo htmlspecialchars($row['routename']); ?></td>
+                                    <td data-label="Journey"><?php echo htmlspecialchars($row['from_stage']); ?> → <?php echo htmlspecialchars($row['to_stage']); ?></td>
+                                    <td data-label="Amount" class="amount">Ksh <?php echo number_format($row['amount'], 0); ?></td>
+                                    <td data-label="Status">
                                         <span class="badge badge-success">Completed</span>
                                     </td>
                                 </tr>

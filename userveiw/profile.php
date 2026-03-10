@@ -48,7 +48,8 @@ $stmt->close();
   <title>SafiriPay | Profile</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="profile.css">
-
+  <link rel="stylesheet" href="darkmode.css">
+  <script src="darkmode.js"></script>
 </head>
 <body>
 
