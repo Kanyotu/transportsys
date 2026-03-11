@@ -33,6 +33,11 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </a>
         </li>
         <li>
+            <a href="manage_drivers.php" class="<?php echo $current_page == 'manage_drivers.php' ? 'active' : ''; ?>">
+                <i class="fas fa-id-card"></i> <span>Drivers</span>
+            </a>
+        </li>
+        <li>
             <a href="trips.php" class="<?php echo $current_page == 'trips.php' ? 'active' : ''; ?>">
                 <i class="fas fa-calendar-alt"></i> <span>Trip Schedules</span>
             </a>

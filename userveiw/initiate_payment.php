@@ -55,6 +55,8 @@ if (!$data) {
     <title>Initiate Payment | SafiriPay Premium</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="darkmode.css">
+    <script src="darkmode.js"></script>
     <style>
         :root {
             --primary: #059669;

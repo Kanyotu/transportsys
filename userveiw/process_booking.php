@@ -167,6 +167,9 @@ if (!$demo_mode) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Select Journey | SafiriPay</title>
     <?php include 'header.php'; ?>
+    <link rel="stylesheet" href="darkmode.css">
+    <script src="darkmode.js"></script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -316,7 +319,6 @@ if (!$demo_mode) {
     </style>
 </head>
 <body>
-    <?php include 'header.php'; ?>
     
     <div class="booking-container">
         <?php if ($demo_mode): ?>
