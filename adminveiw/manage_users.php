@@ -24,12 +24,37 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
 }
 
 // Fetch Users with Filters
-$filter = isset($_GET['type']) ? $_GET['type'] : 'all';
-$query = "SELECT * FROM users";
-if ($filter != 'all') {
-    $query .= " WHERE type = '" . $conn->real_escape_string($filter) . "'";
+$filter_role = isset($_GET['type']) ? $_GET['type'] : 'all';
+$filter_status = isset($_GET['status']) ? $_GET['status'] : 'all';
+$search = isset($_GET['search']) ? $conn->real_escape_string($_GET['search']) : '';
+$date_from = isset($_GET['date_from']) ? $_GET['date_from'] : '';
+$date_to = isset($_GET['date_to']) ? $_GET['date_to'] : '';
+
+$where_conditions = ["1=1"];
+
+if ($filter_role != 'all') {
+    $where_conditions[] = "type = '" . $conn->real_escape_string($filter_role) . "'";
 }
-$query .= " ORDER BY datejoined DESC";
+
+if ($filter_status != 'all') {
+    $status_val = ($filter_status == 'active') ? 1 : 0;
+    $where_conditions[] = "status = $status_val";
+}
+
+if ($search != '') {
+    $where_conditions[] = "(username LIKE '%$search%' OR email LIKE '%$search%' OR phoneno LIKE '%$search%')";
+}
+
+if ($date_from != '') {
+    $where_conditions[] = "datejoined >= '$date_from 00:00:00'";
+}
+
+if ($date_to != '') {
+    $where_conditions[] = "datejoined <= '$date_to 23:59:59'";
+}
+
+$where_clause = implode(' AND ', $where_conditions);
+$query = "SELECT * FROM users WHERE $where_clause ORDER BY datejoined DESC";
 $users = $conn->query($query);
 ?>
 <!DOCTYPE html>
@@ -51,13 +76,13 @@ $users = $conn->query($query);
             </div>
             <ul class="sidebar-menu">
                 <li><a href="dashboard.php"><i class="fas fa-th-large"></i> <span>Dashboard</span></a></li>
-                <li><a href="manage_users.php" class="active"><i class="fas fa-users-cog"></i> <span>User Management</span></a></li>
-                <li><a href="manage_saccos.php"><i class="fas fa-building"></i> <span>SACCO Management</span></a></li>
+                <li><a href="manage_users.php" class="active"><i class="fas fa-users-cog"></i> <span>People</span></a></li>
+                <li><a href="manage_saccos.php"><i class="fas fa-building"></i> <span>Sacco List</span></a></li>
                 <li><a href="manage_routes.php"><i class="fas fa-route"></i> <span>Routes & Stages</span></a></li>
                 <li><a href="manage_trips.php"><i class="fas fa-calendar-alt"></i> <span>Trips & Schedules</span></a></li>
                 <li><a href="manage_bookings.php"><i class="fas fa-ticket-alt"></i> <span>Bookings</span></a></li>
-                <li><a href="manage_payments.php"><i class="fas fa-file-invoice-dollar"></i> <span>Payments</span></a></li>
-                <li><a href="manage_feedback.php"><i class="fas fa-comment-dots"></i> <span>Feedback & Complaints</span></a></li>
+                <li><a href="manage_payments.php"><i class="fas fa-file-invoice-dollar"></i> <span>Money</span></a></li>
+                <li><a href="manage_feedback.php"><i class="fas fa-comment-dots"></i> <span>Talk</span></a></li>
                 <li><a href="reports.php"><i class="fas fa-chart-line"></i> <span>Reports</span></a></li>
                 <li><a href="addadmin.php"><i class="fas fa-user-shield"></i> <span>Administrators</span></a></li>
                 <li><a href="logout.php"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></a></li>
@@ -82,15 +107,61 @@ $users = $conn->query($query);
             </header>
 
             <!-- Filters -->
-            <div class="data-card" style="margin-bottom: 2rem; padding: 1rem 2rem;">
-                <div style="display: flex; gap: 1rem; align-items: center;">
-                    <span style="font-weight: 600; font-size: 0.875rem; color: var(--text-muted);">FILTER BY ROLE:</span>
-                    <a href="manage_users.php?type=all" class="status-badge <?php echo $filter == 'all' ? 'status-active' : ''; ?>" style="text-decoration: none; cursor: pointer;">All Users</a>
-                    <a href="manage_users.php?type=user" class="status-badge <?php echo $filter == 'user' ? 'status-active' : ''; ?>" style="text-decoration: none; cursor: pointer;">Customers</a>
-                    <a href="manage_users.php?type=sacco" class="status-badge <?php echo $filter == 'sacco' ? 'status-active' : ''; ?>" style="text-decoration: none; cursor: pointer;">SACCO Managers</a>
-                    <a href="manage_users.php?type=admin" class="status-badge <?php echo $filter == 'admin' ? 'status-active' : ''; ?>" style="text-decoration: none; cursor: pointer;">Admins</a>
-                </div>
+            <div class="data-card" style="margin-bottom: 2rem; padding: 1.5rem 2rem;">
+                <form method="GET" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; display: block;">SEARCH USERS</label>
+                            <div style="position: relative;">
+                                <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+                                <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Name, Email or Phone..." style="padding-left: 35px; width: 100%;">
+                            </div>
+                        </div>
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; display: block;">STATUS</label>
+                            <select name="status">
+                                <option value="all" <?php echo $filter_status == 'all' ? 'selected' : ''; ?>>All Status</option>
+                                <option value="active" <?php echo $filter_status == 'active' ? 'selected' : ''; ?>>Active</option>
+                                <option value="inactive" <?php echo $filter_status == 'inactive' ? 'selected' : ''; ?>>Inactive</option>
+                            </select>
+                        </div>
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; display: block;">FROM DATE</label>
+                            <input type="date" name="date_from" value="<?php echo $date_from; ?>">
+                        </div>
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; display: block;">TO DATE</label>
+                            <input type="date" name="date_to" value="<?php echo $date_to; ?>">
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button type="submit" class="btn btn-primary" style="flex: 1; height: 42px;">
+                                <i class="fas fa-filter"></i> Apply
+                            </button>
+                            <a href="manage_users.php" class="btn" style="background: var(--border); color: var(--text-main); text-decoration: none; display: flex; align-items: center; justify-content: center; width: 42px; height: 42px;">
+                                <i class="fas fa-undo"></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem; align-items: center; border-top: 1px solid var(--border); pt: 1rem; padding-top: 1rem;">
+                        <span style="font-weight: 600; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Role:</span>
+                        <input type="hidden" name="type" id="role-filter" value="<?php echo $filter_role; ?>">
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button type="button" onclick="setRole('all')" class="status-badge <?php echo $filter_role == 'all' ? 'status-active' : ''; ?>" style="border: none; cursor: pointer; background: <?php echo $filter_role == 'all' ? 'var(--primary)' : 'var(--bg-main)'; ?>; color: <?php echo $filter_role == 'all' ? '#fff' : 'var(--text-main)'; ?>;">All</button>
+                            <button type="button" onclick="setRole('user')" class="status-badge <?php echo $filter_role == 'user' ? 'status-active' : ''; ?>" style="border: none; cursor: pointer; background: <?php echo $filter_role == 'user' ? 'var(--primary)' : 'var(--bg-main)'; ?>; color: <?php echo $filter_role == 'user' ? '#fff' : 'var(--text-main)'; ?>;">Customers</button>
+                            <button type="button" onclick="setRole('sacco')" class="status-badge <?php echo $filter_role == 'sacco' ? 'status-active' : ''; ?>" style="border: none; cursor: pointer; background: <?php echo $filter_role == 'sacco' ? 'var(--primary)' : 'var(--bg-main)'; ?>; color: <?php echo $filter_role == 'sacco' ? '#fff' : 'var(--text-main)'; ?>;">SACCOs</button>
+                            <button type="button" onclick="setRole('admin')" class="status-badge <?php echo $filter_role == 'admin' ? 'status-active' : ''; ?>" style="border: none; cursor: pointer; background: <?php echo $filter_role == 'admin' ? 'var(--primary)' : 'var(--bg-main)'; ?>; color: <?php echo $filter_role == 'admin' ? '#fff' : 'var(--text-main)'; ?>;">Admins</button>
+                        </div>
+                    </div>
+                </form>
             </div>
+
+            <script>
+            function setRole(role) {
+                document.getElementById('role-filter').value = role;
+                document.querySelector('form').submit();
+            }
+            </script>
 
             <!-- Users Table -->
             <div class="data-card">

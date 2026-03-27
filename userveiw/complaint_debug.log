@@ -1,0 +1,6 @@
+Attempting insert: User 3, Type car, Plate 
+Execute success. ID: 1
+Attempting insert: User 3, Type car, Plate KDF 256H
+Execute success. ID: 2
+Attempting insert: User 3, Type driver, Plate KBC 123A
+Execute success. ID: 3

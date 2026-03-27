@@ -23,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 // Get and validate form data
 $type = $_POST['type'] ?? '';
+$platenumber = trim($_POST['platenumber'] ?? '');
 $description = trim($_POST['description'] ?? '');
 
 // Validate complaint type
@@ -51,39 +52,45 @@ if (strlen($description) > 500) {
     exit();
 }
 
-// Sanitize description (prevent XSS)
+// Sanitize description and plate number
 $description = htmlspecialchars($description, ENT_QUOTES, 'UTF-8');
+$platenumber = htmlspecialchars($platenumber, ENT_QUOTES, 'UTF-8');
 
-// Insert complaint into database
-$sql = "INSERT INTO complaint (userid, type, description, date) VALUES (?, ?, ?, NOW())";
+// Debug logging (temporary)
+$debug_file = 'complaint_debug.log';
+file_put_contents($debug_file, "Attempting insert: User $user_id, Type $type, Plate $platenumber\n", FILE_APPEND);
+
+// Insert complaint into database (let date and status use defaults)
+$sql = "INSERT INTO complaint (userid, type, platenumber, description) VALUES (?, ?, ?, ?)";
 $stmt = $conn->prepare($sql);
 
 if (!$stmt) {
+    file_put_contents($debug_file, "Prepare failed: " . $conn->error . "\n", FILE_APPEND);
     die("Database error: " . $conn->error);
 }
 
-$stmt->bind_param("iss", $user_id, $type, $description);
+$stmt->bind_param("isss", $user_id, $type, $platenumber, $description);
 
 if ($stmt->execute()) {
+    file_put_contents($debug_file, "Execute success. ID: " . $stmt->insert_id . "\n", FILE_APPEND);
     // Get the inserted complaint ID
     $complaint_id = $stmt->insert_id;
     
     // Store success message in session
+/* ... existing session code ... */
     $_SESSION['complaint_success'] = true;
     $_SESSION['complaint_id'] = $complaint_id;
     $_SESSION['complaint_type'] = $type;
     
-    // Close statement and connection
     $stmt->close();
     $conn->close();
-    
-    // Redirect to success page
     header("Location: complaint_success.php");
     exit();
     
 } else {
+    file_put_contents($debug_file, "Execute failed: " . $stmt->error . "\n", FILE_APPEND);
     // Handle database error
-    $_SESSION['complaint_error'] = "Failed to submit complaint. Please try again.";
+    $_SESSION['complaint_error'] = "Failed to submit complaint. Database error: " . $stmt->error;
     header("Location: submit_complaint.php");
     exit();
 }

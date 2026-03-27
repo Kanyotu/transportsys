@@ -126,8 +126,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <i class="fas fa-lock" style="position: absolute; left: 1.25rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
                     <input type="password" name="password" placeholder="••••••••" required style="padding-left: 3.5rem;">
                 </div>
+                <div style="text-align: right; margin-top: 0.75rem;">
+                    <a href="forgot_password.php" style="color: var(--primary); font-size: 0.85rem; font-weight: 700; text-decoration: none; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Forgot Password?</a>
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem; padding: 1rem;">Sign In to Portal</button>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; padding: 1rem;">Sign In to Portal</button>
         </form>
         
         <div style="margin-top: 3rem; font-size: 0.875rem; color: var(--text-muted); font-weight: 500;">

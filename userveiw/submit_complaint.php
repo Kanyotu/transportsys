@@ -340,6 +340,13 @@ $username = $_SESSION['username'] ?? 'User';
             <p>Your complaint will be reviewed within 24-48 hours. You can track its status in <a href="my_complaints.php" style="color: var(--primary);">My Complaints</a>.</p>
         </div>
 
+        <?php if (isset($_SESSION['complaint_error'])): ?>
+            <div style="background: #f8d7da; color: #721c24; padding: 1rem; border-radius: 10px; margin-bottom: 2rem; border-left: 4px solid #f5c6cb; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-exclamation-circle"></i>
+                <p><?php echo $_SESSION['complaint_error']; unset($_SESSION['complaint_error']); ?></p>
+            </div>
+        <?php endif; ?>
+
         <!-- Complaint Form -->
         <div class="complaint-card">
             <form id="complaintForm" action="process_complaint.php" method="POST">
@@ -361,6 +368,28 @@ $username = $_SESSION['username'] ?? 'User';
                             <p>Issues with behavior, driving, overcharging, etc.</p>
                         </label>
                     </div>
+                </div>
+
+                <!-- Plate Number (shown for driver and vehicle complaints) -->
+                <div class="form-group" id="plateNumberGroup" style="display: none;">
+                    <label for="platenumber"><i class="fas fa-id-card"></i> Vehicle Plate Number (Optional)</label>
+                    <div style="position: relative;">
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="platenumber" 
+                            name="platenumber" 
+                            placeholder="e.g. KBC 123A"
+                            list="plateSuggestions"
+                            autocomplete="off"
+                        >
+                        <div id="plateStatus" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); display: none;">
+                            <i class="fas fa-check-circle" style="color: var(--success);" id="plateValidIcon"></i>
+                            <i class="fas fa-times-circle" style="color: var(--danger);" id="plateInvalidIcon"></i>
+                        </div>
+                    </div>
+                    <datalist id="plateSuggestions"></datalist>
+                    <p id="plateMessage" style="font-size: 0.8rem; color: var(--gray); margin-top: 5px;">Providing the plate number helps us identify the specific vehicle or trip more accurately.</p>
                 </div>
 
                 <!-- Complaint Description -->
@@ -440,6 +469,15 @@ $username = $_SESSION['username'] ?? 'User';
             // Check the radio button
             const radio = element.querySelector('input[type="radio"]');
             radio.checked = true;
+
+            // Show/hide plate number field
+            const plateGroup = document.getElementById('plateNumberGroup');
+            if (type === 'driver' || type === 'car') {
+                plateGroup.style.display = 'block';
+                plateGroup.style.animation = 'fadeIn 0.3s ease-out';
+            } else {
+                plateGroup.style.display = 'none';
+            }
         }
 
         // Form submission with loading
@@ -460,7 +498,12 @@ $username = $_SESSION['username'] ?? 'User';
                 return;
             }
             
-            // Show loading
+            // Disable button to prevent double submission
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            
+            // Show loading overlay
             document.getElementById('loadingOverlay').style.display = 'flex';
             
             // Submit form
@@ -478,9 +521,52 @@ $username = $_SESSION['username'] ?? 'User';
             }
         }
 
-        // Prevent double submission
-        document.getElementById('submitBtn').addEventListener('click', function() {
-            this.disabled = true;
+        // Real-time plate number validation
+        const plateInput = document.getElementById('platenumber');
+        const plateSuggestions = document.getElementById('plateSuggestions');
+        const plateStatus = document.getElementById('plateStatus');
+        const plateValidIcon = document.getElementById('plateValidIcon');
+        const plateInvalidIcon = document.getElementById('plateInvalidIcon');
+        const plateMessage = document.getElementById('plateMessage');
+        let debounceTimer;
+
+        plateInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            const query = this.value.trim();
+
+            if (query.length < 2) {
+                plateStatus.style.display = 'none';
+                plateSuggestions.innerHTML = '';
+                plateMessage.textContent = 'Providing the plate number helps us identify the specific vehicle or trip more accurately.';
+                plateMessage.style.color = 'var(--gray)';
+                return;
+            }
+
+            debounceTimer = setTimeout(() => {
+                fetch(`search_plates.php?query=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            // Update suggestions
+                            plateSuggestions.innerHTML = data.matches.map(m => `<option value="${m}">`).join('');
+
+                            // Show validation status
+                            plateStatus.style.display = 'block';
+                            if (data.exact_match) {
+                                plateValidIcon.style.display = 'inline';
+                                plateInvalidIcon.style.display = 'none';
+                                plateMessage.textContent = 'Vehicle found in our system!';
+                                plateMessage.style.color = 'var(--success)';
+                            } else {
+                                plateValidIcon.style.display = 'none';
+                                plateInvalidIcon.style.display = 'inline';
+                                plateMessage.textContent = 'We couldn\'t find a bus with this plate number.';
+                                plateMessage.style.color = 'var(--danger)';
+                            }
+                        }
+                    })
+                    .catch(err => console.error('Error fetching plates:', err));
+            }, 300);
         });
     </script>
 </body>

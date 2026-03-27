@@ -1,6 +1,5 @@
 <?php
 session_start();
-include 'header.php';
 include 'checkinguserindb.php';
 
 
@@ -21,13 +20,14 @@ $stmt->execute();
 $result = $stmt->get_result();
 if ($result->num_rows === 1) {
     $user = $result->fetch_assoc();
+    $stmt->close();
 
 } else {
     echo "User not found.";
     exit();
 }
 
-$stmt = $conn->prepare("SELECT COUNT(*) FROM trips WHERE userid = ?");  
+$stmt = $conn->prepare("SELECT COUNT(*) FROM tripsessions WHERE userid = ?");  
 if (!$stmt) {
     echo "Database error.".$conn->error;
     exit();
@@ -42,17 +42,21 @@ $stmt->close();
 
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8">
-  <title>SafiriPay | Profile</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="profile.css">
-  <link rel="stylesheet" href="darkmode.css">
-  <script src="darkmode.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | SafiriPay</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="profile.css">
 </head>
 <body>
-
+    <div class="dashboard-container">
+        <?php include 'header.php'; ?> 
+        <main class="main-content">
+            <header class="header">
+                <h1>My Profile</h1>
+            </header>
 
   <main class="container">
 

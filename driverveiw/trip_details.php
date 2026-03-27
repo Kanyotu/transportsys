@@ -46,10 +46,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['report_issue'])) {
     }
 }
 
+// Handle Co-Driver Assignment
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['assign_codriver'])) {
+    $codriver_id = intval($_POST['codriver_id']);
+    $stmt = $conn->prepare("UPDATE trips SET codriverid = ? WHERE tripid = ? AND driverid = ?");
+    $stmt->bind_param("iii", $codriver_id, $trip_id, $driver_id);
+    if($stmt->execute()) {
+        $message = "Co-driver assigned successfully.";
+        // Refresh trip data to reflect changes
+        header("Location: trip_details.php?id=$trip_id&msg=Co-driver assigned successfully");
+        exit();
+    }
+}
+
 if(isset($_GET['msg'])) $message = $_GET['msg'];
 
 // Fetch Trip Details
-$trip_sql = "SELECT t.*, r.routename, b.platenumber, b.capacity 
+$trip_sql = "SELECT t.*, r.routename, b.platenumber, b.capacity, b.saccoid 
              FROM trips t 
              JOIN routes r ON t.routeid = r.routeid 
              JOIN buses b ON t.busid = b.busid
@@ -57,9 +70,31 @@ $trip_sql = "SELECT t.*, r.routename, b.platenumber, b.capacity
 $trip_res = $conn->query($trip_sql);
 $trip = $trip_res->fetch_assoc();
 
+// If not main driver, check if co-driver
+if (!$trip) {
+    $trip_sql = "SELECT t.*, r.routename, b.platenumber, b.capacity, b.saccoid 
+                 FROM trips t 
+                 JOIN routes r ON t.routeid = r.routeid 
+                 JOIN buses b ON t.busid = b.busid
+                 WHERE t.tripid = $trip_id AND t.codriverid = $driver_id";
+    $trip_res = $conn->query($trip_sql);
+    $trip = $trip_res->fetch_assoc();
+    $is_codriver = true;
+} else {
+    $is_codriver = false;
+}
+
 if (!$trip) {
     echo "Trip not found or access denied.";
     exit();
+}
+
+// Fetch Available Co-Drivers (same SACCO, excluding current driver)
+$codrivers = [];
+if ($trip['trip_type'] == 'long' && $trip['saccoid'] && !$is_codriver) {
+    $s_id = $trip['saccoid'];
+    $co_res = $conn->query("SELECT driverid, dname FROM drivers WHERE saccoid = $s_id AND driverid != $driver_id");
+    while($row = $co_res->fetch_assoc()) $codrivers[] = $row;
 }
 
 // Fetch Bookings / Passengers
@@ -69,6 +104,23 @@ $bookings_sql = "SELECT ts.*, u.username, u.phoneno, s.seatnumber
                  LEFT JOIN seats s ON ts.seatid = s.seatid
                  WHERE ts.tripid = $trip_id AND ts.status = 'paid'";
 $bookings_res = $conn->query($bookings_sql);
+
+// Fetch Route Sequence with Pickup/Drop-off counts
+$route_plan = [];
+$route_plan_sql = "
+    SELECT s.stageid, s.stagename, s.stageorder,
+           (SELECT COUNT(*) FROM tripsessions ts WHERE ts.tripid = $trip_id AND ts.fromstageid = s.stageid AND ts.status = 'paid') as pickups,
+           (SELECT COUNT(*) FROM tripsessions ts WHERE ts.tripid = $trip_id AND ts.tostageid = s.stageid AND ts.status = 'paid') as dropoffs
+    FROM stages s
+    WHERE s.routeid = " . $trip['routeid'] . "
+    ORDER BY s.stageorder ASC
+";
+$route_plan_res = $conn->query($route_plan_sql);
+while($row = $route_plan_res->fetch_assoc()) {
+    if ($row['pickups'] > 0 || $row['dropoffs'] > 0) {
+        $route_plan[] = $row;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
@@ -146,6 +198,40 @@ $bookings_res = $conn->query($bookings_sql);
                 </div>
             </div>
 
+            <!-- Pickup Route Section -->
+            <div class="data-card" style="margin-bottom: 2rem;">
+                <h2 style="margin-bottom: 1.5rem;"><i class="fas fa-map-signs" style="color: var(--primary);"></i> Designated Pickup & Drop-off Points</h2>
+                <?php if(empty($route_plan)): ?>
+                    <p style="color: var(--text-muted); text-align: center; padding: 2rem;">No designated stops required for currently booked passengers.</p>
+                <?php else: ?>
+                    <div class="route-timeline" style="position: relative; margin-left: 20px; border-left: 2px dashed var(--primary-light); padding-left: 30px;">
+                        <?php foreach($route_plan as $index => $stop): ?>
+                            <div class="stop-item" style="position: relative; margin-bottom: 1.5rem;">
+                                <div class="stop-dot" style="position: absolute; left: -39px; top: 0; width: 16px; height: 16px; border-radius: 50%; background: var(--primary); border: 3px solid white; box-shadow: 0 0 0 3px var(--primary-light);"></div>
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                    <div>
+                                        <h4 style="margin: 0; font-size: 1.1rem; color: var(--text-main);"><?php echo htmlspecialchars($stop['stagename']); ?></h4>
+                                        <p style="font-size: 0.75rem; color: var(--text-muted);">Stop #<?php echo $stop['stageorder']; ?></p>
+                                    </div>
+                                    <div style="display: flex; gap: 10px;">
+                                        <?php if($stop['pickups'] > 0): ?>
+                                            <span class="status-badge" style="background: rgba(16, 185, 129, 0.1); color: var(--success); font-weight: 700;">
+                                                <i class="fas fa-user-plus"></i> <?php echo $stop['pickups']; ?> Pickup
+                                            </span>
+                                        <?php endif; ?>
+                                        <?php if($stop['dropoffs'] > 0): ?>
+                                            <span class="status-badge" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; font-weight: 700;">
+                                                <i class="fas fa-user-minus"></i> <?php echo $stop['dropoffs']; ?> Drop-off
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+
             <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
                 <!-- Passenger List -->
                 <div class="data-card">
@@ -214,6 +300,40 @@ $bookings_res = $conn->query($bookings_sql);
                             <button type="submit" class="btn btn-primary" style="width: 100%;">Update Status</button>
                         </form>
                     </div>
+
+                    <!-- Co-Driver Assignment (Only for Long Distance and Main Driver) -->
+                    <?php if($trip['trip_type'] == 'long' && !$is_codriver): ?>
+                    <div class="data-card">
+                        <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem;">Co-Driver Assignment</h2>
+                        <form method="POST">
+                            <input type="hidden" name="assign_codriver" value="1">
+                            <div class="input-group">
+                                <label>Select Co-Driver</label>
+                                <select name="codriver_id" required>
+                                    <option value="">Choose a co-driver...</option>
+                                    <?php foreach($codrivers as $cd): ?>
+                                        <option value="<?php echo $cd['driverid']; ?>" <?php echo $trip['codriverid'] == $cd['driverid'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($cd['dname']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-outline" style="width: 100%; border-color: var(--primary); color: var(--primary);">
+                                <?php echo $trip['codriverid'] ? 'Update Co-Driver' : 'Assign Co-Driver'; ?>
+                            </button>
+                        </form>
+                        <?php if($trip['codriverid']): ?>
+                            <div style="margin-top: 1rem; font-size: 0.875rem; color: var(--text-muted);">
+                                <i class="fas fa-user-friends"></i> Currently Assigned ID: <?php echo $trip['codriverid']; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                    <?php elseif($trip['trip_type'] == 'long' && $is_codriver): ?>
+                    <div class="data-card" style="background: var(--primary-light);">
+                        <h2 style="margin-bottom: 0.5rem; font-size: 1.25rem; color: var(--primary);">Co-Driver Mode</h2>
+                        <p style="font-size: 0.875rem; color: var(--primary);">You are assigned as a co-driver for this long-distance trip.</p>
+                    </div>
+                    <?php endif; ?>
 
                     <!-- Issue Reporting -->
                     <div class="data-card">

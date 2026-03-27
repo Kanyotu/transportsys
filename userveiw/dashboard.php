@@ -157,6 +157,7 @@ $stmt->close();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="darkmode.css">
     <script src="darkmode.js"></script>
+    <script src="route_search.js" defer></script>
     <style>
         * {
             margin: 0;
@@ -570,6 +571,160 @@ $stmt->close();
                 width: 20px;
             }
         }
+
+        /* Search Styles */
+        .search-container {
+            position: relative;
+            margin-top: 1.5rem;
+            max-width: 600px;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-input-wrapper i {
+            position: absolute;
+            left: 15px;
+            color: var(--gray);
+        }
+
+        #routeSearchInput {
+            width: 100%;
+            padding: 12px 12px 12px 45px;
+            border-radius: 30px;
+            border: none;
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: var(--transition);
+        }
+
+        #routeSearchInput:focus {
+            outline: none;
+            background: white;
+            box-shadow: 0 4px 20px rgba(32, 201, 151, 0.3);
+        }
+
+        #routeSearchResults {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 15px;
+            margin-top: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+            color: var(--dark);
+        }
+
+        .search-item {
+            padding: 15px;
+            border-bottom: 1px solid var(--light-gray);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-item:hover {
+            background: var(--light-gray);
+        }
+
+        .route-info .route-name {
+            font-weight: bold;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .route-info .route-sacco {
+            font-size: 0.85rem;
+            color: var(--gray);
+            margin-bottom: 4px;
+        }
+
+        .route-info .route-stages {
+            font-size: 0.8rem;
+            color: var(--dark);
+            opacity: 0.8;
+        }
+
+        .route-fare {
+            font-weight: 600;
+            color: var(--secondary);
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        [data-theme='dark'] .search-container #routeSearchInput {
+            background: rgba(40, 40, 40, 0.9);
+            color: white;
+        }
+
+        [data-theme='dark'] #routeSearchResults {
+            background: #2d2d2d;
+            border: 1px solid #444;
+        }
+
+        [data-theme='dark'] .search-item {
+            border-bottom-color: #444;
+        }
+
+        [data-theme='dark'] .search-item:hover {
+            background: #3d3d3d;
+        }
+
+        [data-theme='dark'] .route-info .route-stages {
+            color: #ccc;
+        }
+
+        /* Type Tags and Search Layout Improvements */
+        .type-tag {
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .type-short {
+            background: rgba(32, 201, 151, 0.1);
+            color: #10b981;
+            border: 1px solid rgba(32, 201, 151, 0.2);
+        }
+        .type-long {
+            background: rgba(15, 81, 50, 0.1);
+            color: #0f5132;
+            border: 1px solid rgba(15, 81, 50, 0.2);
+        }
+
+        .route-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        
+        .route-side {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+
+        .route-side i { color: var(--primary); font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -581,6 +736,13 @@ $stmt->close();
             <div class="welcome-text">
                 <h1>Welcome back, <?php echo htmlspecialchars(ucfirst($username)); ?>!</h1>
                 <p>Track your trips, manage your budget, and travel smarter.</p>
+                <div class="search-container">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="routeSearchInput" placeholder="Where do you want to go? (e.g. Nairobi, Westlands)">
+                    </div>
+                    <div id="routeSearchResults"></div>
+                </div>
             </div>
             <div class="welcome-actions">
                 <a href="scan_qr.php" class="scan-button short-dist">

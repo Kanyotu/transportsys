@@ -13,13 +13,27 @@ if (!isset($_SESSION['user_id'])) {
 $session_id = $_GET['session'] ?? null;
 if (!$session_id) {
     // If no session, check if we are browsing long-distance trips
+    $search_query = $_GET['search'] ?? '';
+    if (!empty($search_query)) {
+        $where_clause = "WHERE (r.routename LIKE ? OR s.sacconame LIKE ?)";
+    } else {
+        $where_clause = "WHERE t.trip_type = 'long' AND t.status = 'active'";
+    }
+
     $sql = "SELECT t.*, r.routename, b.platenumber, s.sacconame, b.saccoid 
             FROM trips t
             JOIN routes r ON t.routeid = r.routeid
             JOIN buses b ON t.busid = b.busid
             JOIN saccos s ON b.saccoid = s.saccoid
-            WHERE t.trip_type = 'long' AND t.status = 'active'";
-    $trips_result = $conn->query($sql);
+            $where_clause";
+    
+    $stmt = $conn->prepare($sql);
+    if (!empty($search_query)) {
+        $like_search = "%$search_query%";
+        $stmt->bind_param("ss", $like_search, $like_search);
+    }
+    $stmt->execute();
+    $trips_result = $stmt->get_result();
     $available_trips = [];
     while($row = $trips_result->fetch_assoc()) {
         $available_trips[] = $row;
@@ -114,6 +128,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     <link rel="stylesheet" href="darkmode.css">
     <script src="darkmode.js"></script>
+    <script src="route_search.js" defer></script>
     <style>
         :root {
             --primary: #059669; /* Emerald 600 */
@@ -450,6 +465,155 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 gap: 8px;
             }
         }
+
+        /* Search Styles for Booking Page */
+        .search-container {
+            position: relative;
+            margin-bottom: 2rem;
+            max-width: 500px;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-input-wrapper i {
+            position: absolute;
+            left: 15px;
+            color: #64748b;
+        }
+
+        #routeSearchInput {
+            width: 100%;
+            padding: 12px 12px 12px 45px;
+            border-radius: 12px;
+            border: 1px solid rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.8);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        #routeSearchInput:focus {
+            outline: none;
+            background: white;
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
+        }
+
+        #routeSearchResults {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            margin-top: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .search-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-item:hover {
+            background: #f0fdf4;
+        }
+
+        .route-info .route-name {
+            font-weight: 700;
+            color: var(--primary-dark);
+            font-size: 1rem;
+        }
+
+        .route-info .route-sacco {
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        .route-info .route-stages {
+            font-size: 0.75rem;
+            color: #475569;
+        }
+
+        .route-fare {
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 0.85rem;
+        }
+
+        [data-theme='dark'] #routeSearchInput {
+            background: rgba(30, 41, 59, 0.7);
+            color: white;
+            border-color: rgba(255,255,255,0.1);
+        }
+
+        [data-theme='dark'] #routeSearchResults {
+            background: #1e293b;
+            border-color: rgba(255,255,255,0.1);
+        }
+
+        [data-theme='dark'] .search-item {
+            border-bottom-color: rgba(255,255,255,0.05);
+        }
+
+        [data-theme='dark'] .search-item:hover {
+            background: rgba(5, 150, 105, 0.1);
+        }
+
+        /* Type Tags */
+        .type-tag {
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .type-short {
+            background: rgba(32, 201, 151, 0.1);
+            color: #10b981;
+            border: 1px solid rgba(32, 201, 151, 0.2);
+        }
+        .type-long {
+            background: rgba(5, 150, 105, 0.1);
+            color: #059669;
+            border: 1px solid rgba(5, 150, 105, 0.2);
+        }
+
+        .route-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        
+        .route-side {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+
+        .route-side i { color: var(--primary); font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -465,17 +629,33 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <h2>Long Distance Travel</h2>
                     </div>
 
+                    <div class="search-container">
+                        <div class="search-input-wrapper">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="routeSearchInput" placeholder="Search for another route...">
+                        </div>
+                        <div id="routeSearchResults"></div>
+                    </div>
+
                     <div class="trip-browser-grid">
                         <?php if (empty($available_trips)): ?>
                             <div class="empty-state">
-                                <i class="fas fa-bus-alt"></i>
-                                <p>No long-distance trips scheduled at the moment.</p>
+                                <i class="fas fa-search"></i>
+                                <p>No trips matching "<?php echo htmlspecialchars($search_query); ?>" were found.</p>
+                                <a href="book.php" class="btn-premium" style="width: auto; padding: 10px 20px; text-decoration: none; margin-top: 10px;">View All Long Distance</a>
                             </div>
                         <?php else: ?>
                             <?php foreach ($available_trips as $trip): ?>
                                 <div class="trip-browser-card">
                                     <div class="trip-browser-info">
-                                        <h3><?php echo htmlspecialchars($trip['routename']); ?></h3>
+                                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                                            <h3 style="margin: 0;"><?php echo htmlspecialchars($trip['routename']); ?></h3>
+                                            <?php if ($trip['trip_type'] == 'short'): ?>
+                                                <span class="type-tag type-short">Local</span>
+                                            <?php else: ?>
+                                                <span class="type-tag type-long">Long Dist.</span>
+                                            <?php endif; ?>
+                                        </div>
                                         <div class="trip-meta">
                                             <span><i class="fas fa-building"></i> <?php echo htmlspecialchars($trip['sacconame']); ?></span>
                                             <span><i class="fas fa-shuttle-van"></i> <?php echo htmlspecialchars($trip['platenumber']); ?></span>

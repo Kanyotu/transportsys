@@ -27,16 +27,50 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_trip'])) {
     }
 }
 
+// Filter Inputs
+$search = isset($_GET['search']) ? $conn->real_escape_string($_GET['search']) : '';
+$filter_route = isset($_GET['route_id']) && $_GET['route_id'] !== '' ? intval($_GET['route_id']) : null;
+$filter_bus = isset($_GET['bus_id']) && $_GET['bus_id'] !== '' ? intval($_GET['bus_id']) : null;
+$filter_driver = isset($_GET['driver_id']) && $_GET['driver_id'] !== '' ? intval($_GET['driver_id']) : null;
+$filter_status = isset($_GET['status']) ? $_GET['status'] : 'all';
+$date_from = isset($_GET['date_from']) ? $_GET['date_from'] : '';
+$date_to = isset($_GET['date_to']) ? $_GET['date_to'] : '';
+
+$where_conditions = ["r.saccoid = $sacco_id"];
+
+if ($search != '') {
+    $where_conditions[] = "(r.routename LIKE '%$search%' OR b.platenumber LIKE '%$search%' OR d.dname LIKE '%$search%')";
+}
+
+if ($filter_route) $where_conditions[] = "t.routeid = $filter_route";
+if ($filter_bus) $where_conditions[] = "t.busid = $filter_bus";
+if ($filter_driver) $where_conditions[] = "t.driverid = $filter_driver";
+
+if ($filter_status != 'all') {
+    $where_conditions[] = "t.status = '$filter_status'";
+}
+
+if ($date_from != '') {
+    $where_conditions[] = "t.starttime >= '$date_from 00:00:00'";
+}
+
+if ($date_to != '') {
+    $where_conditions[] = "t.starttime <= '$date_to 23:59:59'";
+}
+
+$where_clause = implode(' AND ', $where_conditions);
+
 // Fetch Trips for this SACCO
-$trips = $conn->query("
+$query = "
     SELECT t.*, r.routename, b.platenumber, d.dname 
     FROM trips t 
     JOIN routes r ON t.routeid = r.routeid 
     JOIN buses b ON t.busid = b.busid 
     JOIN drivers d ON t.driverid = d.driverid 
-    WHERE r.saccoid = $sacco_id
+    WHERE $where_clause
     ORDER BY t.starttime DESC
-");
+";
+$trips = $conn->query($query);
 
 // Fetch Routes, Buses, and Drivers for dropdowns
 $routes_list = $conn->query("SELECT * FROM routes WHERE saccoid = $sacco_id");
@@ -71,7 +105,49 @@ $drivers_list = $conn->query("SELECT * FROM drivers");
                         <i class="fas fa-calendar-plus"></i> Schedule Trip
                     </button>
                 </div>
-            </header>
+            <!-- Filter Section -->
+            <div class="data-card" style="margin-bottom: 2rem; padding: 1.5rem 2rem;">
+                <form method="GET" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; align-items: end;">
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; display: block;">SEARCH</label>
+                            <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Route, Plate, Driver...">
+                        </div>
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; display: block;">ROUTE</label>
+                            <select name="route_id">
+                                <option value="">All Routes</option>
+                                <?php $routes_list->data_seek(0); while($r = $routes_list->fetch_assoc()): ?>
+                                    <option value="<?php echo $r['routeid']; ?>" <?php echo $filter_route == $r['routeid'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($r['routename']); ?>
+                                    </option>
+                                <?php endwhile; ?>
+                            </select>
+                        </div>
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; display: block;">STATUS</label>
+                            <select name="status">
+                                <option value="all" <?php echo $filter_status == 'all' ? 'selected' : ''; ?>>All Status</option>
+                                <option value="active" <?php echo $filter_status == 'active' ? 'selected' : ''; ?>>Active</option>
+                                <option value="completed" <?php echo $filter_status == 'completed' ? 'selected' : ''; ?>>Completed</option>
+                                <option value="cancelled" <?php echo $filter_status == 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; display: block;">DATE</label>
+                            <input type="date" name="date_from" value="<?php echo $date_from; ?>">
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; height: 42px;">
+                            <button type="submit" class="btn btn-primary" style="flex: 1;">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                            <a href="trips.php" class="btn" style="background: var(--bg-main); color: var(--text-main); text-decoration: none; display: flex; align-items: center; justify-content: center; width: 42px;">
+                                <i class="fas fa-undo"></i>
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
 
             <?php if($message): ?>
                 <div style="background: rgba(16, 185, 129, 0.1); color: var(--success); padding: 1rem; border-radius: 12px; margin-bottom: 2rem; font-weight: 600;">

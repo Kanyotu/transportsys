@@ -16,10 +16,38 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 $username = $_SESSION['username'] ?? 'User';
 
-// Fetch user's complaints
-$sql = "SELECT * FROM complaint WHERE userid = ? ORDER BY date DESC";
+// Filter Inputs
+$filter_type = $_GET['type'] ?? 'all';
+$date_from = $_GET['date_from'] ?? '';
+$date_to = $_GET['date_to'] ?? '';
+
+$where_conditions = ["userid = ?"];
+$params = [$user_id];
+$types = "i";
+
+if ($filter_type !== 'all') {
+    $where_conditions[] = "type = ?";
+    $params[] = $filter_type;
+    $types .= "s";
+}
+
+if (!empty($date_from)) {
+    $where_conditions[] = "date >= ?";
+    $params[] = $date_from . " 00:00:00";
+    $types .= "s";
+}
+
+if (!empty($date_to)) {
+    $where_conditions[] = "date <= ?";
+    $params[] = $date_to . " 23:59:59";
+    $types .= "s";
+}
+
+$where_clause = implode(' AND ', $where_conditions);
+$sql = "SELECT * FROM complaint WHERE $where_clause ORDER BY date DESC";
+
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $user_id);
+$stmt->bind_param($types, ...$params);
 $stmt->execute();
 $result = $stmt->get_result();
 $complaints = [];
@@ -271,6 +299,36 @@ $conn->close();
             </a>
         </div>
 
+        <!-- Filters -->
+        <div style="background: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+            <form method="GET" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: var(--gray);">Complaint Type</label>
+                    <select name="type" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd; background: #fff; width: 100%;">
+                        <option value="all" <?php echo $filter_type == 'all' ? 'selected' : ''; ?>>All Types</option>
+                        <option value="car" <?php echo $filter_type == 'car' ? 'selected' : ''; ?>>Vehicle Issues</option>
+                        <option value="driver" <?php echo $filter_type == 'driver' ? 'selected' : ''; ?>>Driver Issues</option>
+                    </select>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: var(--gray);">From Date</label>
+                    <input type="date" name="date_from" value="<?php echo $date_from; ?>" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd; width: 100%;">
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: var(--gray);">To Date</label>
+                    <input type="date" name="date_to" value="<?php echo $date_to; ?>" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd; width: 100%;">
+                </div>
+                <div style="display: flex; gap: 0.5rem; height: 42px;">
+                    <button type="submit" style="flex: 1; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <i class="fas fa-filter"></i> Apply
+                    </button>
+                    <a href="my_complaints.php" style="width: 42px; background: #f0f0f0; color: var(--dark); text-decoration: none; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: background 0.3s;">
+                        <i class="fas fa-undo"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+
         <?php if (!empty($complaints)): ?>
             <!-- Statistics -->
             <?php
@@ -306,6 +364,11 @@ $conn->close();
                             <span class="complaint-id">
                                 #<?php echo str_pad($complaint['complaintid'], 6, '0', STR_PAD_LEFT); ?>
                             </span>
+                            <?php if (!empty($complaint['platenumber'])): ?>
+                                <span class="complaint-id" style="background: rgba(15, 81, 50, 0.1); color: var(--primary);">
+                                    <i class="fas fa-id-card"></i> <?php echo htmlspecialchars($complaint['platenumber']); ?>
+                                </span>
+                            <?php endif; ?>
                         </div>
                         <div class="complaint-date">
                             <i class="far fa-calendar"></i>

@@ -37,6 +37,22 @@ if (isset($_GET['delete_fare'])) {
     header("Location: manage_fares.php?msg=Fare deleted");
     exit();
 }
+
+// Handle Fare Edit
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_fare'])) {
+    $fareid = intval($_POST['fareid']);
+    $amount = floatval($_POST['amount']);
+    
+    $stmt = $conn->prepare("UPDATE fares SET amount = ? WHERE fareid = ?");
+    $stmt->bind_param("di", $amount, $fareid);
+    
+    if($stmt->execute()) {
+        $message = "Fare updated successfully!";
+    } else {
+        $message = "Error updating fare: " . $stmt->error;
+    }
+}
+
 if(isset($_GET['msg'])) $message = $_GET['msg'];
 
 // Fetch Routes for this SACCO
@@ -88,7 +104,9 @@ $fares = $conn->query("
             </header>
 
             <?php if($message): ?>
-                <div style="background: rgba(16, 185, 129, 0.1); color: var(--success); padding: 1rem; border-radius: 12px; margin-bottom: 2rem; font-weight: 600;">
+                <div style="background: <?php echo (strpos($message, 'Error') !== false) ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)'; ?>; 
+                            color: <?php echo (strpos($message, 'Error') !== false) ? 'var(--danger)' : 'var(--success)'; ?>; 
+                            padding: 1rem; border-radius: 12px; margin-bottom: 2rem; font-weight: 600;">
                     <?php echo $message; ?>
                 </div>
             <?php endif; ?>
@@ -113,7 +131,16 @@ $fares = $conn->query("
                                         <td><?php echo htmlspecialchars($row['from_stage']); ?></td>
                                         <td><?php echo htmlspecialchars($row['to_stage']); ?></td>
                                         <td style="font-weight: 700; color: var(--primary);">KSh <?php echo number_format($row['amount'], 2); ?></td>
-                                        <td>
+                                        <td style="display: flex; gap: 12px; align-items: center;">
+                                            <button onclick="openEditFareModal(this)" 
+                                                    data-id="<?php echo $row['fareid']; ?>" 
+                                                    data-amount="<?php echo $row['amount']; ?>" 
+                                                    data-route="<?php echo htmlspecialchars($row['routename']); ?>"
+                                                    data-from="<?php echo htmlspecialchars($row['from_stage']); ?>"
+                                                    data-to="<?php echo htmlspecialchars($row['to_stage']); ?>"
+                                                    style="background: transparent; border: none; color: var(--primary); cursor: pointer; padding: 0;">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
                                             <a href="?delete_fare=<?php echo $row['fareid']; ?>" style="color: var(--danger);" onclick="return confirm('Delete this fare?')"><i class="fas fa-trash"></i></a>
                                         </td>
                                     </tr>
@@ -172,6 +199,25 @@ $fares = $conn->query("
                 </div>
             </div>
 
+            <!-- Edit Fare Modal -->
+            <div id="editFareModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; justify-content:center; align-items:center;">
+                <div class="data-card" style="width:450px;">
+                    <h2 style="margin-bottom:0.5rem;">Edit Fare Price</h2>
+                    <p id="editFareInfo" style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem;"></p>
+                    <form method="POST">
+                        <input type="hidden" name="fareid" id="editFareId">
+                        <div class="input-group">
+                            <label>New Fare Amount (KSh)</label>
+                            <input type="number" name="amount" id="editFareAmount" placeholder="e.g. 60" step="0.01" required>
+                        </div>
+                        <div style="display:flex; gap:10px; margin-top:1rem;">
+                            <button type="submit" name="edit_fare" class="btn btn-primary" style="flex:1;">Update Fare</button>
+                            <button type="button" onclick="document.getElementById('editFareModal').style.display='none'" class="btn" style="flex:1; background:var(--bg-main);">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <script>
                 function fetchStages(routeId) {
                     const fromSelect = document.getElementById('fromStageSelect');
@@ -195,6 +241,19 @@ $fares = $conn->query("
                             fromSelect.disabled = false;
                             toSelect.disabled = false;
                         });
+                }
+
+                function openEditFareModal(btn) {
+                    const id = btn.getAttribute('data-id');
+                    const amount = btn.getAttribute('data-amount');
+                    const route = btn.getAttribute('data-route');
+                    const from = btn.getAttribute('data-from');
+                    const to = btn.getAttribute('data-to');
+                    
+                    document.getElementById('editFareId').value = id;
+                    document.getElementById('editFareAmount').value = amount;
+                    document.getElementById('editFareInfo').innerText = `${route}: ${from} to ${to}`;
+                    document.getElementById('editFareModal').style.display = 'flex';
                 }
             </script>
         </main>

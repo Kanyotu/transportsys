@@ -9,12 +9,12 @@ include 'database.php';
 $driver_id = $_SESSION['driver_id'];
 $driver_name = $_SESSION['driver_name'];
 
-// Fetch All Trips for this driver
+// Fetch All Trips for this driver (Main or Co-driver)
 $trips_sql = "SELECT t.*, r.routename, b.platenumber 
               FROM trips t 
               JOIN routes r ON t.routeid = r.routeid 
               JOIN buses b ON t.busid = b.busid
-              WHERE t.driverid = $driver_id 
+              WHERE t.driverid = $driver_id OR t.codriverid = $driver_id
               ORDER BY t.starttime DESC";
 $trips_res = $conn->query($trips_sql);
 ?>
@@ -76,6 +76,7 @@ $trips_res = $conn->query($trips_sql);
                                 <th>Vehicle</th>
                                 <th>Departure Time</th>
                                 <th>Type</th>
+                                <th>Role</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -88,6 +89,13 @@ $trips_res = $conn->query($trips_sql);
                                         <td><span style="font-weight: 600;"><?php echo htmlspecialchars($trip['platenumber']); ?></span></td>
                                         <td><?php echo date('M d, Y - H:i', strtotime($trip['starttime'])); ?></td>
                                         <td><span style="text-transform: capitalize;"><?php echo $trip['trip_type']; ?></span></td>
+                                        <td>
+                                            <?php if($trip['driverid'] == $driver_id): ?>
+                                                <span class="status-badge" style="background: var(--primary-light); color: var(--primary);">Main Driver</span>
+                                            <?php else: ?>
+                                                <span class="status-badge" style="background: var(--warning)22; color: var(--warning);">Co-Driver</span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td>
                                             <?php 
                                             $status_class = '';

@@ -57,68 +57,58 @@ $recent_bookings = $conn->query("
                 </div>
             </header>
 
+            <!-- Simplified Action Grid -->
+            <div class="action-grid">
+                <a href="earnings.php" class="action-card money">
+                    <i class="fas fa-wallet"></i>
+                    <h2>My Money</h2>
+                    <p>See how much you earned</p>
+                </a>
+                
+                <a href="bookings.php" class="action-card">
+                    <i class="fas fa-ticket-alt"></i>
+                    <h2>Bookings</h2>
+                    <p>People who want to travel</p>
+                </a>
+
+                <a href="trips.php" class="action-card">
+                    <i class="fas fa-road"></i>
+                    <h2>Today's Work</h2>
+                    <p>Manage trips and buses</p>
+                </a>
+
+                <a href="manage_drivers.php" class="action-card">
+                    <i class="fas fa-users"></i>
+                    <h2>Drivers</h2>
+                    <p>Add or remove drivers</p>
+                </a>
+
+                <a href="vehicles.php" class="action-card">
+                    <i class="fas fa-bus"></i>
+                    <h2>Buses</h2>
+                    <p>Manage your fleet</p>
+                </a>
+
+                <a href="reviews.php" class="action-card">
+                    <i class="fas fa-comment-dots"></i>
+                    <h2>Feedback</h2>
+                    <p>What people are saying</p>
+                </a>
+            </div>
+
+            <!-- Quick Stats in a simple row below -->
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #0ea5e9, #2563eb);">
-                        <i class="fas fa-money-bill-wave"></i>
-                    </div>
                     <div class="stat-info">
-                        <h3>Total Earnings</h3>
+                        <h3>Money Today</h3>
                         <p>KSh <?php echo number_format($total_revenue, 0); ?></p>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
-                        <i class="fas fa-bus"></i>
-                    </div>
                     <div class="stat-info">
-                        <h3>Active Fleet</h3>
-                        <p><?php echo $active_buses; ?> Buses</p>
+                        <h3>Active Buses</h3>
+                        <p><?php echo $active_buses; ?></p>
                     </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                        <i class="fas fa-ticket-alt"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>Today's Bookings</h3>
-                        <p><?php echo $today_bookings; ?></p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="data-card">
-                <div class="data-card-header">
-                    <h2>Recent Bookings</h2>
-                    <a href="bookings.php" class="btn" style="background: var(--bg-main); color: var(--primary);">View All</a>
-                </div>
-                <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Passenger</th>
-                                <th>Route</th>
-                                <th>Amount</th>
-                                <th>Status</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php while($row = $recent_bookings->fetch_assoc()): ?>
-                                <tr>
-                                    <td style="font-weight: 700;"><?php echo htmlspecialchars($row['username']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['routename']); ?></td>
-                                    <td style="font-weight: 700;">KSh <?php echo number_format($row['fareamount'], 2); ?></td>
-                                    <td>
-                                        <span class="status-badge status-<?php echo strtolower($row['status']); ?>">
-                                            <?php echo ucfirst($row['status']); ?>
-                                        </span>
-                                    </td>
-                                    <td style="color: var(--text-muted);"><?php echo date('M d, H:i', strtotime($row['createdat'])); ?></td>
-                                </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
                 </div>
             </div>
         </main>

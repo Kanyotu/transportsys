@@ -5,7 +5,6 @@ if(!isset($_SESSION['sacco_manager_id'])) {
     exit();
 }
 include 'database.php';
-
 $sacco_id = $_SESSION['sacco_id'];
 $message = "";
 
@@ -20,6 +19,48 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_route'])) {
         $message = "Route created successfully!";
     } else {
         $message = "Error creating route.";
+    }
+}
+
+// Handle Route Deletion
+if (isset($_GET['delete_route'])) {
+    $route_id = intval($_GET['delete_route']);
+    
+    // Check for active trips
+    $check_trips = $conn->query("SELECT COUNT(*) as trip_count FROM trips WHERE routeid = $route_id AND status = 'active'");
+    if ($check_trips->fetch_assoc()['trip_count'] > 0) {
+        header("Location: manage_routes.php?msg=Error: Cannot delete route with active trips&type=error");
+        exit();
+    }
+    
+    // Delete dependent data (fares and stages)
+    $conn->query("DELETE FROM fares WHERE routeid = $route_id");
+    $conn->query("DELETE FROM stages WHERE routeid = $route_id");
+    
+    // Delete route
+    $stmt = $conn->prepare("DELETE FROM routes WHERE routeid = ? AND saccoid = ?");
+    $stmt->bind_param("ii", $route_id, $sacco_id);
+    
+    if($stmt->execute()) {
+        header("Location: manage_routes.php?msg=Route deleted successfully");
+    } else {
+        header("Location: manage_routes.php?msg=Error deleting route&type=error");
+    }
+    exit();
+}
+
+// Handle Route Edit
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_route'])) {
+    $route_id = intval($_POST['routeid']);
+    $routename = mysqli_real_escape_string($conn, $_POST['routename']);
+    
+    $stmt = $conn->prepare("UPDATE routes SET routename = ? WHERE routeid = ? AND saccoid = ?");
+    $stmt->bind_param("sii", $routename, $route_id, $sacco_id);
+    
+    if($stmt->execute()) {
+        $message = "Route updated successfully!";
+    } else {
+        $message = "Error updating route.";
     }
 }
 
@@ -49,6 +90,7 @@ if (isset($_GET['delete_stage'])) {
     header("Location: manage_routes.php?msg=Stage deleted");
     exit();
 }
+
 if(isset($_GET['msg'])) $message = $_GET['msg'];
 
 // Fetch Routes for this SACCO
@@ -89,7 +131,9 @@ $routes = $conn->query("
             </header>
 
             <?php if($message): ?>
-                <div style="background: rgba(16, 185, 129, 0.1); color: var(--success); padding: 1rem; border-radius: 12px; margin-bottom: 2rem; font-weight: 600;">
+                <div style="background: <?php echo (strpos($message, 'Error') !== false) ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)'; ?>; 
+                            color: <?php echo (strpos($message, 'Error') !== false) ? 'var(--danger)' : 'var(--success)'; ?>; 
+                            padding: 1rem; border-radius: 12px; margin-bottom: 2rem; font-weight: 600;">
                     <?php echo $message; ?>
                 </div>
             <?php endif; ?>
@@ -127,13 +171,28 @@ $routes = $conn->query("
                                             </div>
                                         </td>
                                         <td>
-                                            <button class="btn btn-primary" 
-                                                    onclick="openAddStageModal(this)" 
-                                                    data-id="<?php echo $route_id; ?>" 
-                                                    data-name="<?php echo htmlspecialchars($row['routename']); ?>"
-                                                    style="padding: 0.5rem 1rem; font-size: 0.8125rem;">
-                                                <i class="fas fa-plus-circle"></i> Add Stage
-                                            </button>
+                                            <div style="display: flex; gap: 8px;">
+                                                <button class="btn btn-primary" 
+                                                        onclick="openAddStageModal(this)" 
+                                                        data-id="<?php echo $route_id; ?>" 
+                                                        data-name="<?php echo htmlspecialchars($row['routename']); ?>"
+                                                        style="padding: 0.5rem 0.8rem; font-size: 0.8125rem;">
+                                                    <i class="fas fa-plus-circle"></i> Add Stage
+                                                </button>
+                                                <button class="btn" 
+                                                        onclick="openEditRouteModal(this)" 
+                                                        data-id="<?php echo $route_id; ?>" 
+                                                        data-name="<?php echo htmlspecialchars($row['routename']); ?>"
+                                                        style="padding: 0.5rem 0.8rem; font-size: 0.8125rem; background: var(--bg-main); color: var(--text-main);">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <a href="?delete_route=<?php echo $route_id; ?>" 
+                                                   class="btn" 
+                                                   onclick="return confirm('Are you sure you want to delete this route? All stages and fare data for this route will also be deleted.')"
+                                                   style="padding: 0.5rem 0.8rem; font-size: 0.8125rem; background: var(--bg-main); color: var(--danger); text-decoration: none;">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php endwhile; ?>
@@ -187,6 +246,24 @@ $routes = $conn->query("
         </div>
     </div>
 
+    <!-- Edit Route Modal -->
+    <div id="editRouteModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; justify-content:center; align-items:center;">
+        <div class="data-card" style="width:400px;">
+            <h2 style="margin-bottom:1.5rem;">Edit Route Name</h2>
+            <form method="POST">
+                <input type="hidden" name="routeid" id="editRouteId">
+                <div class="input-group">
+                    <label>Route Name</label>
+                    <input type="text" name="routename" id="editRouteName" placeholder="Enter route name" required>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:1rem;">
+                    <button type="submit" name="edit_route" class="btn btn-primary" style="flex:1;">Save Changes</button>
+                    <button type="button" onclick="document.getElementById('editRouteModal').style.display='none'" class="btn" style="flex:1; background:var(--bg-main);">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="darkmode.js"></script>
     <script>
         function openAddStageModal(btn) {
@@ -195,6 +272,14 @@ $routes = $conn->query("
             document.getElementById('modalRouteId').value = id;
             document.getElementById('modalRouteName').innerText = "Route: " + name;
             document.getElementById('addStageModal').style.display = 'flex';
+        }
+
+        function openEditRouteModal(btn) {
+            const id = btn.getAttribute('data-id');
+            const name = btn.getAttribute('data-name');
+            document.getElementById('editRouteId').value = id;
+            document.getElementById('editRouteName').value = name;
+            document.getElementById('editRouteModal').style.display = 'flex';
         }
     </script>
 </body>

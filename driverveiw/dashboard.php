@@ -38,6 +38,36 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_email'])) {
         $message = "Email successfully updated!";
     }
 }
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['change_password'])) {
+    $current_pass = $_POST['current_password'];
+    $new_pass = $_POST['new_password'];
+    $confirm_pass = $_POST['confirm_password'];
+    
+    // Fetch current password
+    $stmt = $conn->prepare("SELECT hashedpassword FROM drivers WHERE driverid = ?");
+    $stmt->bind_param("i", $driver_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $user = $res->fetch_assoc();
+    
+    if ($user && password_verify($current_pass, $user['hashedpassword'])) {
+        if ($new_pass === $confirm_pass) {
+            $hashed_pass = password_hash($new_pass, PASSWORD_DEFAULT);
+            $update_stmt = $conn->prepare("UPDATE drivers SET hashedpassword = ? WHERE driverid = ?");
+            $update_stmt->bind_param("si", $hashed_pass, $driver_id);
+            if ($update_stmt->execute()) {
+                $message = "Password successfully updated!";
+            } else {
+                $error = "Error updating password.";
+            }
+        } else {
+            $error = "New passwords do not match!";
+        }
+    } else {
+        $error = "Incorrect current password!";
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
@@ -84,6 +114,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_email'])) {
             <?php if ($message): ?>
                 <div style="background: rgba(16, 185, 129, 0.1); color: var(--success); padding: 1.25rem; border-radius: var(--radius-md); margin-bottom: 2rem; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.2);">
                     <i class="fas fa-check-circle"></i> <?php echo $message; ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if (isset($error) && $error): ?>
+                <div style="background: rgba(239, 68, 68, 0.1); color: var(--danger); padding: 1.25rem; border-radius: var(--radius-md); margin-bottom: 2rem; font-weight: 700; border: 1px solid rgba(239, 68, 68, 0.2);">
+                    <i class="fas fa-exclamation-circle"></i> <?php echo $error; ?>
                 </div>
             <?php endif; ?>
 
@@ -178,6 +214,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_email'])) {
                                 ?>" placeholder="Add your email" required style="font-size: 0.85rem;">
                             </div>
                             <button type="submit" class="btn btn-outline" style="width: 100%; font-size: 0.8rem;">Update Email</button>
+                        </form>
+
+                        <h4 style="font-size: 1rem; margin: 1.5rem 0 1rem; color: var(--text-main);">Change Password</h4>
+                        <form method="POST">
+                            <input type="hidden" name="change_password" value="1">
+                            <div class="input-group">
+                                <label style="font-size: 0.75rem;">Current Password</label>
+                                <input type="password" name="current_password" required style="font-size: 0.85rem; padding: 0.8rem;">
+                            </div>
+                            <div class="input-group">
+                                <label style="font-size: 0.75rem;">New Password</label>
+                                <input type="password" name="new_password" required style="font-size: 0.85rem; padding: 0.8rem;">
+                            </div>
+                            <div class="input-group">
+                                <label style="font-size: 0.75rem;">Confirm New Password</label>
+                                <input type="password" name="confirm_password" required style="font-size: 0.85rem; padding: 0.8rem;">
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 0.85rem; padding: 0.8rem;">Update Password</button>
                         </form>
                     </div>
                 </div>

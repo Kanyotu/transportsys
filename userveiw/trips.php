@@ -1,6 +1,6 @@
 <?php
 session_start();
-include 'header.php';
+
 include 'checkinguserindb.php';
 
 // Get filter parameters
@@ -71,6 +71,7 @@ $result = $stmt->get_result();
   <script src="darkmode.js"></script>
 </head>
 <body>
+  <?php include 'header.php'; ?>
 
 <main class="trips-container">
 

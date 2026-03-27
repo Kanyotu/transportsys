@@ -7,6 +7,7 @@ if(!isset($_SESSION['sacco_manager_id'])) {
 include 'database.php';
 
 $sacco_id = $_SESSION['sacco_id'];
+$sacco_id = intval($sacco_id);
 $message = "";
 
 // Handle Vehicle Registration
@@ -50,6 +51,78 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_trip'])) {
         $message = "Error scheduling trip.";
     }
 }
+
+// Handle Vehicle Deletion
+if (isset($_GET['delete_vehicle'])) {
+    $busid = intval($_GET['delete_vehicle']);
+    
+    // Check for active trips
+    $check_trips = $conn->query("SELECT COUNT(*) as trip_count FROM trips WHERE busid = $busid AND status = 'active'");
+    if ($check_trips->fetch_assoc()['trip_count'] > 0) {
+        header("Location: vehicles.php?msg=Error: Cannot delete vehicle with active trips&type=error");
+        exit();
+    }
+    
+    // Delete seats first
+    $conn->query("DELETE FROM seats WHERE busid = $busid");
+    
+    // Delete vehicle
+    $stmt = $conn->prepare("DELETE FROM buses WHERE busid = ? AND saccoid = ?");
+    $stmt->bind_param("ii", $busid, $sacco_id);
+    
+    if($stmt->execute()) {
+        header("Location: vehicles.php?msg=Vehicle deleted successfully");
+    } else {
+        header("Location: vehicles.php?msg=Error deleting vehicle&type=error");
+    }
+    exit();
+}
+
+// Handle Vehicle Edit
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_vehicle'])) {
+    $busid = intval($_POST['busid']);
+    $platenumber = mysqli_real_escape_string($conn, $_POST['platenumber']);
+    $capacity = intval($_POST['capacity']);
+    $driverid = intval($_POST['driverid']);
+    $status = intval($_POST['status']);
+    
+    // Get current capacity to see if we need to regenerate seats
+    $curr_res = $conn->query("SELECT capacity FROM buses WHERE busid = $busid");
+    $old_capacity = $curr_res->fetch_assoc()['capacity'] ?? 0;
+    
+    if ($capacity != $old_capacity) {
+        // Check for active bookings before changing capacity
+        $check_bookings = $conn->query("SELECT COUNT(*) as booking_count FROM tripsessions ts JOIN trips t ON ts.tripid = t.tripid WHERE t.busid = $busid AND ts.status IN ('pending', 'paid') AND t.status = 'active'");
+        if ($check_bookings->fetch_assoc()['booking_count'] > 0) {
+            $message = "Error: Cannot change capacity for a vehicle with active bookings.";
+        } else {
+            // Update capacity and regenerate seats
+            $stmt = $conn->prepare("UPDATE buses SET platenumber = ?, capacity = ?, driverid = ?, status = ? WHERE busid = ? AND saccoid = ?");
+            $stmt->bind_param("siiiii", $platenumber, $capacity, $driverid, $status, $busid, $sacco_id);
+            if ($stmt->execute()) {
+                $conn->query("DELETE FROM seats WHERE busid = $busid");
+                $seat_stmt = $conn->prepare("INSERT INTO seats (busid, seatnumber, status) VALUES (?, ?, 'available')");
+                for ($i = 1; $i <= $capacity; $i++) {
+                    $s_num = "S" . $i;
+                    $seat_stmt->bind_param("is", $busid, $s_num);
+                    $seat_stmt->execute();
+                }
+                $message = "Vehicle updated and seats regenerated successfully!";
+            }
+        }
+    } else {
+        // Just update details
+        $stmt = $conn->prepare("UPDATE buses SET platenumber = ?, driverid = ?, status = ? WHERE busid = ? AND saccoid = ?");
+        $stmt->bind_param("siiii", $platenumber, $driverid, $status, $busid, $sacco_id);
+        if($stmt->execute()) {
+            $message = "Vehicle updated successfully!";
+        } else {
+            $message = "Error updating vehicle.";
+        }
+    }
+}
+
+if(isset($_GET['msg'])) $message = $_GET['msg'];
 
 // Fetch Vehicles for this SACCO with available seat count
 $vehicles = $conn->query("
@@ -98,7 +171,9 @@ $drivers_list = $conn->query("SELECT * FROM drivers");
             </header>
 
             <?php if($message): ?>
-                <div style="background: rgba(16, 185, 129, 0.1); color: var(--success); padding: 1rem; border-radius: 12px; margin-bottom: 2rem; font-weight: 600;">
+                <div style="background: <?php echo (strpos($message, 'Error') !== false) ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)'; ?>; 
+                            color: <?php echo (strpos($message, 'Error') !== false) ? 'var(--danger)' : 'var(--success)'; ?>; 
+                            padding: 1rem; border-radius: 12px; margin-bottom: 2rem; font-weight: 600;">
                     <?php echo $message; ?>
                 </div>
             <?php endif; ?>
@@ -136,8 +211,21 @@ $drivers_list = $conn->query("SELECT * FROM drivers");
                                             <button class="btn" onclick="openScheduleModal('<?php echo $row['busid']; ?>', '<?php echo $row['platenumber']; ?>', '<?php echo $row['driverid']; ?>')" style="padding: 0.5rem; background: var(--bg-main); color: var(--success);" title="Schedule Trip">
                                                 <i class="fas fa-calendar-plus"></i>
                                             </button>
-                                            <button class="btn" style="padding: 0.5rem; background: var(--bg-main); color: var(--primary);"><i class="fas fa-edit"></i></button>
-                                            <button class="btn" style="padding: 0.5rem; background: var(--bg-main); color: var(--danger);"><i class="fas fa-trash"></i></button>
+                                            <button class="btn" onclick="openEditVehicleModal(this)" 
+                                                    data-id="<?php echo $row['busid']; ?>" 
+                                                    data-plate="<?php echo htmlspecialchars($row['platenumber']); ?>"
+                                                    data-capacity="<?php echo $row['capacity']; ?>" 
+                                                    data-driver="<?php echo $row['driverid']; ?>"
+                                                    data-status="<?php echo $row['status']; ?>"
+                                                    style="padding: 0.5rem; background: var(--bg-main); color: var(--primary);" title="Edit Vehicle">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <a href="?delete_vehicle=<?php echo $row['busid']; ?>" 
+                                               class="btn" 
+                                               onclick="return confirm('Are you sure you want to delete this vehicle? All seat data will also be removed.')"
+                                               style="padding: 0.5rem; background: var(--bg-main); color: var(--danger); text-decoration: none;" title="Delete Vehicle">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>
@@ -164,7 +252,9 @@ $drivers_list = $conn->query("SELECT * FROM drivers");
                             <label>Assign Driver</label>
                             <select name="driverid" required>
                                 <option value="">Select Driver</option>
-                                <?php while($d = $drivers_list->fetch_assoc()): ?>
+                                <?php 
+                                $drivers_list->data_seek(0);
+                                while($d = $drivers_list->fetch_assoc()): ?>
                                     <option value="<?php echo $d['driverid']; ?>"><?php echo htmlspecialchars($d['dname']); ?></option>
                                 <?php endwhile; ?>
                             </select>
@@ -172,6 +262,47 @@ $drivers_list = $conn->query("SELECT * FROM drivers");
                         <div style="display:flex; gap:10px; margin-top:1rem;">
                             <button type="submit" name="add_vehicle" class="btn btn-primary" style="flex:1;">Register</button>
                             <button type="button" onclick="document.getElementById('addVehicleModal').style.display='none'" class="btn" style="flex:1; background:var(--bg-main);">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Edit Vehicle Modal -->
+            <div id="editVehicleModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; justify-content:center; align-items:center;">
+                <div class="data-card" style="width:400px;">
+                    <h2 style="margin-bottom:1.5rem;">Edit Vehicle</h2>
+                    <form method="POST">
+                        <input type="hidden" name="busid" id="editBusId">
+                        <div class="input-group">
+                            <label>Plate Number</label>
+                            <input type="text" name="platenumber" id="editPlateNumber" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Capacity (Seats)</label>
+                            <input type="number" name="capacity" id="editCapacity" required>
+                            <small style="color: var(--danger); font-size: 0.7rem;">Changing capacity will reset all seats!</small>
+                        </div>
+                        <div class="input-group">
+                            <label>Assigned Driver</label>
+                            <select name="driverid" id="editDriverId" required>
+                                <option value="">Select Driver</option>
+                                <?php 
+                                $drivers_list->data_seek(0);
+                                while($d = $drivers_list->fetch_assoc()): ?>
+                                    <option value="<?php echo $d['driverid']; ?>"><?php echo htmlspecialchars($d['dname']); ?></option>
+                                <?php endwhile; ?>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Status</label>
+                            <select name="status" id="editStatus">
+                                <option value="1">In Service</option>
+                                <option value="0">Maintenance</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; gap:10px; margin-top:1rem;">
+                            <button type="submit" name="edit_vehicle" class="btn btn-primary" style="flex:1;">Save Changes</button>
+                            <button type="button" onclick="document.getElementById('editVehicleModal').style.display='none'" class="btn" style="flex:1; background:var(--bg-main);">Cancel</button>
                         </div>
                     </form>
                 </div>
@@ -220,6 +351,22 @@ $drivers_list = $conn->query("SELECT * FROM drivers");
                     document.getElementById('modalDriverId').value = driverId;
                     document.getElementById('selectedVehicleLabel').innerText = "Vehicle: " + plateNumber;
                     document.getElementById('quickScheduleModal').style.display = 'flex';
+                }
+
+                function openEditVehicleModal(btn) {
+                    const id = btn.getAttribute('data-id');
+                    const plate = btn.getAttribute('data-plate');
+                    const capacity = btn.getAttribute('data-capacity');
+                    const driver = btn.getAttribute('data-driver');
+                    const status = btn.getAttribute('data-status');
+                    
+                    document.getElementById('editBusId').value = id;
+                    document.getElementById('editPlateNumber').value = plate;
+                    document.getElementById('editCapacity').value = capacity;
+                    document.getElementById('editDriverId').value = driver;
+                    document.getElementById('editStatus').value = status;
+                    
+                    document.getElementById('editVehicleModal').style.display = 'flex';
                 }
             </script>
     </div>
